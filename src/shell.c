@@ -29,7 +29,7 @@ void add_token(struct token_list *list, struct token t) {
     }
 }
 
-struct token_list tokenize(char *line, size_t size) {
+struct token_list tokenize(char *line) {//, size_t size) {
     // let's start with enough space for 5 tokens, and if there's more allocate
     long init_size = 4;
     struct token_list tl = {
@@ -101,14 +101,14 @@ int exec_cmd(struct token_list *tl) {
     return 0;
 }
 
-void exec_exit() {
+void exec_exit(void) {
     exit(0);
 }
+
 int handle_tokens(struct token_list tl) {
     char * cmd = NULL;
     cmd = tl.tokens[0].value;
     if(strcmp(cmd, "cd") == 0) {
-        //TODO
         cd(tl.tokens[1].value);
         printf("built-ins\n");
     } else if(strcmp(cmd, "exit") == 0) {
@@ -120,17 +120,18 @@ int handle_tokens(struct token_list tl) {
     }
     return 0;
 }
-int main(int argc, char *argv[])
+
+int main(void)//int argc, char *argv[])
 {
     char *line = NULL;
     size_t size = 0;
-    ssize_t nread;
+    //ssize_t nread;
     struct token_list tl;
     for(;;) {
         printf("> ");
         fflush(stdout);
         getline(&line, &size, stdin);
-        tl = tokenize(line, size);
+        tl = tokenize(line); //, size);
         handle_tokens(tl);
         //handle line
         // read input
