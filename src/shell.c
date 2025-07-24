@@ -174,11 +174,16 @@ void seg_handler(int sig) {
 }
 char * readline(void) {
     char *buf = malloc(sizeof(char) * 16); 
+    int bcap = 16;
     char c = '\0';
     buf[0] = '\0';
     //printf("TEST\r\n");
     int i = 0;
     for(;;) {
+        if(i >= bcap -1) {
+            bcap *= 2;
+            buf = realloc(buf, bcap);
+        }
         fflush(stdout);
         read(STDIN_FILENO, &c, 1);
         if(c == '\r' || c == '\n') {
