@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
 
 /*** TOKENIZER ***/
 
@@ -42,7 +44,7 @@ struct token_list tokenize(char *line) {//, size_t size) {
     // read line. when space hit 
     for(int i = 0, j = 0; line [i] != '\0'; i++) {
         // if normal char (not whitespace or newline or eof, add to token
-        //printf("i: %d, char: %c\n", i, line[i]);
+        printf("i: %d, char: %c\n", i, line[i]);
         if(line[i] == ' ' || line[i] == '\n') {
             struct token t;
             t.value = strdup(buf);
@@ -102,6 +104,7 @@ int exec_cmd(struct token_list *tl) {
 }
 
 void exec_exit(void) {
+    printf("In exit function\n");
     exit(0);
 }
 
@@ -121,16 +124,40 @@ int handle_tokens(struct token_list tl) {
     return 0;
 }
 
+void print_prompt(void) {
+    printf("> ");
+}
+
+void intHandler(int sig) { 
+    //write(STDOUT_FILENO, "\n> ", 3);
+    write(STDOUT_FILENO, "\n> ", 3);
+}
+
+
 int main(void)//int argc, char *argv[])
 {
     char *line = NULL;
     size_t size = 0;
+    ssize_t nread;
     //ssize_t nread;
     struct token_list tl;
+    signal(SIGINT, intHandler);
     for(;;) {
-        printf("> ");
+        print_prompt();
         fflush(stdout);
-        getline(&line, &size, stdin);
+        nread = getline(&line, &size, stdin);
+        /*
+        if(nread == -1) {
+            if(errno == EINTR) {
+                printf("getline int\n");
+                continue;
+            }
+            else {
+                perror("getline");
+                break;
+            }
+        }
+        */
         tl = tokenize(line); //, size);
         handle_tokens(tl);
         //handle line
