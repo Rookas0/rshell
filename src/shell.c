@@ -70,7 +70,10 @@ struct token_list tokenize(char *line, size_t size) {
 /*** BUILT-INS ***/
 
 int cd(char * path) {
-    chdir(path);
+    if(chdir(path) == -1) {
+        perror("chdir");
+        return 1;
+    }
     return 0;
 }
 
@@ -97,6 +100,10 @@ int exec_cmd(struct token_list *tl) {
 
     return 0;
 }
+
+void exec_exit() {
+    exit(0);
+}
 int handle_tokens(struct token_list tl) {
     char * cmd = NULL;
     cmd = tl.tokens[0].value;
@@ -104,7 +111,10 @@ int handle_tokens(struct token_list tl) {
         //TODO
         cd(tl.tokens[1].value);
         printf("built-ins\n");
-    } else {
+    } else if(strcmp(cmd, "exit") == 0) {
+        exec_exit();
+    }
+    else {
         printf("Exec else\n");
         exec_cmd(&tl);
     }
