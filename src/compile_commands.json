@@ -8,11 +8,11 @@
       "-pedantic",
       "-std=c17",
       "-o",
-      "shell",
+      "../build/shell",
       "shell.c"
     ],
     "directory": "/home/luke/c-programming/shell/src",
     "file": "/home/luke/c-programming/shell/src/shell.c",
-    "output": "/home/luke/c-programming/shell/src/shell"
+    "output": "/home/luke/c-programming/shell/build/shell"
   }
 ]

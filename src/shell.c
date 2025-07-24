@@ -57,6 +57,13 @@ void add_token(struct token_list *list, struct token t) {
     }
 }
 
+void free_tokens(struct token_list *list) {
+    for(int i = 0; i < list->size; i++ ) {
+        free(list->tokens[i].value);
+    }
+    free(list->tokens);
+}
+
 struct token_list tokenize(char *line) {//, size_t size) {
     // let's start with enough space for 5 tokens, and if there's more allocate
     long init_size = 4;
@@ -93,7 +100,6 @@ struct token_list tokenize(char *line) {//, size_t size) {
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }
-
     return tl;
 }
 
@@ -112,7 +118,7 @@ int cd(char * path) {
 int exec_cmd(struct token_list *tl) {
     printf("In exec_cmd\r\n");
     fflush(stdout);
-    char **argv = malloc(sizeof(char *) * tl->size + 1);
+    char **argv = malloc(sizeof(char *) * (tl->size + 1));
     for(int i = 0; i < tl->size; i++) {
         argv[i] = tl->tokens[i].value;
         argv[i+1] = NULL;
@@ -130,14 +136,16 @@ int exec_cmd(struct token_list *tl) {
         }
     } else {
         wait(NULL);
+        free(argv);
         enable_raw_mode();
     }
 
     return 0;
 }
 
-void exec_exit(void) {
+void exec_exit(struct token_list *tl) {
     printf("In exit function\r\n");
+    free_tokens(tl); 
     exit(0);
 }
 
@@ -148,7 +156,7 @@ int handle_tokens(struct token_list tl) {
         cd(tl.tokens[1].value);
         printf("built-ins\r\n");
     } else if(strcmp(cmd, "exit") == 0) {
-        exec_exit();
+        exec_exit(&tl);
         printf("Why are we here...\r\n");
     }
     else {
@@ -227,8 +235,10 @@ int main(void)//int argc, char *argv[])
         line = readline();
         printf("After readline\r\n");
         tl = tokenize(line); //, size);
+        free(line);
         printf("After tokenize\r\n");
         handle_tokens(tl);
+        free_tokens(&tl);
         //handle line
         // read input
     }
