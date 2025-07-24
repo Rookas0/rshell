@@ -6,12 +6,38 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#include <termios.h>
+
+/*** termios ***/ 
+struct termios orig_termios;
+void disable_raw_mode(void) {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+void enable_raw_mode(void) {
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+        perror("tcgetattr");
+        exit(EXIT_FAILURE);
+    }
+
+    struct termios raw = orig_termios;
+
+    atexit(disable_raw_mode);
+
+    cfmakeraw(&raw);
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+        perror("tcsetattr");
+        exit(EXIT_FAILURE);
+    }
+}
 
 /*** TOKENIZER ***/
 
 struct token {
     char *value;
 };
+
 struct token_list {
     struct token *tokens;
     int size;
@@ -20,8 +46,8 @@ struct token_list {
 
 void add_token(struct token_list *list, struct token t) {
     if(list->size >= list->capacity) {
-        printf("size: %d, capac: %d\n", list->size, list->capacity);
-        printf("reallocating....\n");
+        printf("size: %d, capac: %d\r\n", list->size, list->capacity);
+        printf("reallocating....\r\n");
         list->tokens = realloc(list->tokens, sizeof(struct token) * list->capacity*2);
         list->capacity *= 2;
     }
@@ -42,11 +68,15 @@ struct token_list tokenize(char *line) {//, size_t size) {
     tl.tokens = malloc(sizeof(struct token) * init_size);
     char buf[32];
     // read line. when space hit 
-    for(int i = 0, j = 0; line [i] != '\0'; i++) {
+    printf("Line is %ld long\r\n", strlen(line));
+    for(int i = 0, j = 0; i <= strlen(line); i++) {
         // if normal char (not whitespace or newline or eof, add to token
-        printf("i: %d, char: %c\n", i, line[i]);
-        if(line[i] == ' ' || line[i] == '\n') {
+        //printf("i: %d, char: %c\r\n", i, line[i]);
+        //fflush(stdout);
+        if(line[i] == ' ' || line[i] == '\r' || line[i] == '\0') {
             struct token t;
+            printf("Adding %s\r\n", buf);
+            fflush(stdout);
             t.value = strdup(buf);
             //memcpy(t.value, buf, strlen(buf));
             memset(buf, 0, sizeof(buf));
@@ -61,7 +91,7 @@ struct token_list tokenize(char *line) {//, size_t size) {
     }
     //add_token(&tl, (struct token) {.value = NULL});
     for (int i = 0; i < tl.size; i++) {
-        printf("Token %d: %s\n", i, tl.tokens[i].value);
+        printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }
 
     return tl;
@@ -80,7 +110,7 @@ int cd(char * path) {
 }
 
 int exec_cmd(struct token_list *tl) {
-    printf("In exec_cmd\n");
+    printf("In exec_cmd\r\n");
     fflush(stdout);
     char **argv = malloc(sizeof(char *) * tl->size + 1);
     for(int i = 0; i < tl->size; i++) {
@@ -93,18 +123,21 @@ int exec_cmd(struct token_list *tl) {
         exit(EXIT_FAILURE);
     }
     if(pid == 0) {
+        disable_raw_mode();
         if(execvp(argv[0], argv) == -1) {
-            printf("Error executing %s\n", argv[0]);
+            printf("Error executing %s\r\n", argv[0]);
+            exit(1);
         }
     } else {
         wait(NULL);
+        enable_raw_mode();
     }
 
     return 0;
 }
 
 void exec_exit(void) {
-    printf("In exit function\n");
+    printf("In exit function\r\n");
     exit(0);
 }
 
@@ -113,12 +146,13 @@ int handle_tokens(struct token_list tl) {
     cmd = tl.tokens[0].value;
     if(strcmp(cmd, "cd") == 0) {
         cd(tl.tokens[1].value);
-        printf("built-ins\n");
+        printf("built-ins\r\n");
     } else if(strcmp(cmd, "exit") == 0) {
         exec_exit();
+        printf("Why are we here...\r\n");
     }
     else {
-        printf("Exec else\n");
+        printf("Exec else\r\n");
         exec_cmd(&tl);
     }
     return 0;
@@ -129,27 +163,54 @@ void print_prompt(void) {
 }
 
 void intHandler(int sig) { 
-    //write(STDOUT_FILENO, "\n> ", 3);
-    write(STDOUT_FILENO, "\n> ", 3);
+    //write(STDOUT_FILENO, "\r\n> ", 3);
+    write(STDOUT_FILENO, "\r\n> ", 4);
 }
 
+void seg_handler(int sig) {
+    disable_raw_mode();
+    printf("\nseg fault\n");
+    exit(1);
+}
+char * readline(void) {
+    char *buf = malloc(sizeof(char) * 16); 
+    char c = '\0';
+    buf[0] = '\0';
+    //printf("TEST\r\n");
+    int i = 0;
+    for(;;) {
+        fflush(stdout);
+        read(STDIN_FILENO, &c, 1);
+        if(c == '\r' || c == '\n') {
+            buf[i] = '\0';
+            break;
+        }
+        buf[i] = c;
+        write(STDOUT_FILENO, &c, 1);
+        //printf("Reading %c%d\r\n", buf[i],  i);
+        i++;
+    }
+    return buf;
+}
 
 int main(void)//int argc, char *argv[])
 {
+    enable_raw_mode();
     char *line = NULL;
     size_t size = 0;
     ssize_t nread;
     //ssize_t nread;
     struct token_list tl;
-    signal(SIGINT, intHandler);
+    signal(SIGSEGV, seg_handler);
+    //signal(SIGINT, intHandler);
     for(;;) {
         print_prompt();
         fflush(stdout);
-        nread = getline(&line, &size, stdin);
+        //nread = getline(&line, &size, stdin);
         /*
         if(nread == -1) {
             if(errno == EINTR) {
-                printf("getline int\n");
+                printf("getline int\r\n");
                 continue;
             }
             else {
@@ -158,7 +219,10 @@ int main(void)//int argc, char *argv[])
             }
         }
         */
+        line = readline();
+        printf("After readline\r\n");
         tl = tokenize(line); //, size);
+        printf("After tokenize\r\n");
         handle_tokens(tl);
         //handle line
         // read input
