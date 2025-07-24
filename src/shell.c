@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 /*** TOKENIZER ***/
 
@@ -85,7 +86,18 @@ int handle_tokens(struct token_list tl) {
         argv[i] = tl.tokens[i].value;
         argv[i+1] = NULL;
     }
-    execvp(argv[0], argv);
+    pid_t pid = fork();
+    if(pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    if(pid == 0) {
+        if(execvp(argv[0], argv) == -1) {
+            printf("Error executing %s\n", argv[0]);
+        }
+    } else {
+        wait(NULL);
+    }
     return 0;
 }
 int main(int argc, char *argv[])
@@ -96,6 +108,7 @@ int main(int argc, char *argv[])
     struct token_list tl;
     for(;;) {
         printf("> ");
+        fflush(stdout);
         getline(&line, &size, stdin);
         tl = tokenize(line, size);
         handle_tokens(tl);
