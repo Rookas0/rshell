@@ -66,24 +66,20 @@ struct token_list tokenize(char *line, size_t size) {
 }
 
 
-int handle_tokens(struct token_list tl) {
-    /*
-    char *args[2];
-    char buf[20];
 
-    args[0] = buf;
-    //printf("%s\n", buf);
-    args[1] = NULL;
-    if(size > 0) {
-        args[1] = NULL;
-    }
-    */
-    //printf("%s\n", args[0]);    
+/*** BUILT-INS ***/
+
+int cd(char * path) {
+    chdir(path);
+    return 0;
+}
+
+int exec_cmd(struct token_list *tl) {
+    printf("In exec_cmd\n");
     fflush(stdout);
-    // need to fork
-    char **argv = malloc(sizeof(char *) * tl.size + 1);
-    for(int i = 0; i < tl.size; i++) {
-        argv[i] = tl.tokens[i].value;
+    char **argv = malloc(sizeof(char *) * tl->size + 1);
+    for(int i = 0; i < tl->size; i++) {
+        argv[i] = tl->tokens[i].value;
         argv[i+1] = NULL;
     }
     pid_t pid = fork();
@@ -97,6 +93,20 @@ int handle_tokens(struct token_list tl) {
         }
     } else {
         wait(NULL);
+    }
+
+    return 0;
+}
+int handle_tokens(struct token_list tl) {
+    char * cmd = NULL;
+    cmd = tl.tokens[0].value;
+    if(strcmp(cmd, "cd") == 0) {
+        //TODO
+        cd(tl.tokens[1].value);
+        printf("built-ins\n");
+    } else {
+        printf("Exec else\n");
+        exec_cmd(&tl);
     }
     return 0;
 }
