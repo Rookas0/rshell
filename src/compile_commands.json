@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-pedantic",
+      "-std=c17",
+      "-o",
+      "shell",
+      "shell.c"
+    ],
+    "directory": "/home/luke/c-programming/shell/src",
+    "file": "/home/luke/c-programming/shell/src/shell.c",
+    "output": "/home/luke/c-programming/shell/src/shell"
+  }
+]
