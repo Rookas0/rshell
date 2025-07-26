@@ -9,6 +9,14 @@
 #include <termios.h>
 #include <stdbool.h>
 
+/*** line reader ***/
+struct list {
+    char c;
+    bool is_cp;
+    struct list *next;
+    struct list *prev;
+};
+
 /*** termios ***/ 
 struct termios orig_termios;
 void disable_raw_mode(void) {
@@ -65,7 +73,7 @@ void free_tokens(struct token_list *list) {
     free(list->tokens);
 }
 
-struct token_list tokenize(char *line) {//, size_t size) {
+struct token_list tokenize(struct list *line) {//, size_t size) {
     // let's start with enough space for 5 tokens, and if there's more allocate
     long init_size = 4;
     struct token_list tl = {
@@ -76,7 +84,29 @@ struct token_list tokenize(char *line) {//, size_t size) {
     tl.tokens = malloc(sizeof(struct token) * init_size);
     char buf[32];
     // read line. when space hit 
-    printf("Line is %ld long\r\n", strlen(line));
+    //printf("Line is %ld long\r\n", strlen(line));
+    int j = 0;
+    do {
+        char c = line->c;
+
+        if(c == ' ' || c == '\r' || c == '\0' || line->next == NULL) {
+            struct token t;
+            fflush(stdout);
+            t.value = strdup(buf);
+            memset(buf, 0, sizeof(buf));
+            j = 0;
+            add_token(&tl, t);
+            line = line->next;
+            continue;
+        }
+        fflush(stdout);
+        buf[j] = c;
+        buf[j+1] = '\0';
+        line = line->next;
+        j++;
+        if(c == '\r') break;
+    }while (line != NULL && line->c != '\0');
+    /*
     for(int i = 0, j = 0; i <= strlen(line); i++) {
         // if normal char (not whitespace or newline or eof, add to token
         //printf("i: %d, char: %c\r\n", i, line[i]);
@@ -97,6 +127,7 @@ struct token_list tokenize(char *line) {//, size_t size) {
         j++;
         if(line[i] == '\n') break;
     }
+    */
     //add_token(&tl, (struct token) {.value = NULL});
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
@@ -182,43 +213,67 @@ void seg_handler(int sig) {
     exit(1);
 }
     
-/*** line reader ***/
-struct list {
-    char c;
-    bool is_cp;
-    struct list *next;
-    struct list *prev;
-};
 
+struct list *create_list(char c) {
+    struct list *my_list = malloc(sizeof(struct list));
 
+    my_list->next = NULL;
+    my_list->prev = NULL;
+    my_list->is_cp = true;
+    my_list->c = c;
+
+    return my_list;
+}
+
+void append_list(struct list* ll) {
+    
+}
 // read key press as int.
 // process key press. 
 //
-char * readline(void) {
+struct list * readline(void) {
     char *buf = malloc(sizeof(char) * 16); 
     int bcap = 16;
     char c = '\0';
     buf[0] = '\0';
     //printf("TEST\r\n");
     int i = 0;
+    struct list *ll = create_list('\0');
+    struct list *cursor = ll;
     for(;;) {
         if(i >= bcap -1) {
             bcap *= 2;
             buf = realloc(buf, bcap);
         }
         fflush(stdout);
-        struct line; 
         read(STDIN_FILENO, &c, 1);
+        if(ll->c != '\0') {
+            struct list *nl = create_list(c);
+            nl-> prev = ll;
+            ll->next = nl;
+            ll = nl;
+        }
+        else {
+            ll->c = c;
+        }
+        //printf("c: %c\r\n", ll->c);
         if(c == '\r' || c == '\n') {
             buf[i] = '\0';
             break;
         }
-        buf[i] = c;
-        write(STDOUT_FILENO, &c, 1);
+        //buf[i] = c;
+        write(STDOUT_FILENO, &ll->c, 1);
         //printf("Reading %c%d\r\n", buf[i],  i);
         i++;
     }
-    return buf;
+    write(STDOUT_FILENO, "\r\n", 2);
+    /*
+    while(cursor->next != NULL) {
+        write(STDOUT_FILENO, &cursor->c, 1);
+        cursor = cursor->next;
+    }
+*/
+    return cursor;
 }
 
 
@@ -248,8 +303,7 @@ int main(void)//int argc, char *argv[])
             }
         }
         */
-        line = readline();
-        printf("After readline\r\n");
+        struct list *line = readline();
         tl = tokenize(line); //, size);
         free(line);
         printf("After tokenize\r\n");
