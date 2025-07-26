@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <termios.h>
+#include <stdbool.h>
 
 /*** termios ***/ 
 struct termios orig_termios;
@@ -180,6 +181,19 @@ void seg_handler(int sig) {
     printf("\nseg fault\n");
     exit(1);
 }
+    
+/*** line reader ***/
+struct list {
+    char c;
+    bool is_cp;
+    struct list *next;
+    struct list *prev;
+};
+
+
+// read key press as int.
+// process key press. 
+//
 char * readline(void) {
     char *buf = malloc(sizeof(char) * 16); 
     int bcap = 16;
@@ -193,6 +207,7 @@ char * readline(void) {
             buf = realloc(buf, bcap);
         }
         fflush(stdout);
+        struct line; 
         read(STDIN_FILENO, &c, 1);
         if(c == '\r' || c == '\n') {
             buf[i] = '\0';
@@ -205,6 +220,7 @@ char * readline(void) {
     }
     return buf;
 }
+
 
 int main(void)//int argc, char *argv[])
 {
