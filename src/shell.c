@@ -9,6 +9,17 @@
 #include <termios.h>
 #include <stdbool.h>
 
+enum shell_key {
+    ARROW_LEFT =  1000,
+    ARROW_DOWN,
+    ARROW_UP,
+    ARROW_RIGHT,
+    DEL_KEY,
+    HOME_KEY,
+    END_KEY,
+    PAGE_UP,
+    PAGE_DOWN
+};
 /*** line reader ***/
 struct list {
     char c;
@@ -113,7 +124,10 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     struct list *ol = line;
     do {
         char c = line->c;
-
+        if(c != ' ') {
+            buf[j] = c;
+            buf[j+1] = '\0';
+        }
         if(c == ' ' || c == '\r' || c == '\0' || line->next == NULL) {
             struct token t;
             fflush(stdout);
@@ -125,8 +139,6 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
             continue;
         }
         fflush(stdout);
-        buf[j] = c;
-        buf[j+1] = '\0';
         line = line->next;
         j++;
         if(c == '\r') break;
@@ -246,50 +258,91 @@ void append_list(struct list* ll) {
 // read key press as int.
 // process key press. 
 //
-struct list * readline(void) {
-    //char *buf = malloc(sizeof(char) * 16); 
-    int bcap = 16;
-    char c = '\0';
-    //buf[0] = '\0';
-    //printf("TEST\r\n");
-    int i = 0;
-    struct list *ll = create_list('\0');
-    struct list *cursor = ll;
-    for(;;) {
-        /*
-        if(i >= bcap -1) {
-            bcap *= 2;
-            buf = realloc(buf, bcap);
+int readchar(void) {
+    // referenced kilo text editor for handling escape sequence
+    char c;
+    read(STDIN_FILENO, &c, 1);
+
+    // if escape sequence isn't followed by anything, escape key was pressed, so return escape
+    if(c == '\x1b') {
+        char seq[3];
+        if(read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+        if(read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+        if(seq[0] == '[') {
+            if(seq[1] >= '0' && seq[1] <= '9') {
+                if(read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+                if(seq[2] == '~') {
+                    switch(seq[1]) {
+                        case '1': return HOME_KEY;
+                        case '3': return DEL_KEY;
+                        case '4': return END_KEY;
+                        case '5': return PAGE_UP;
+                        case '6': return PAGE_DOWN;
+                        case '7': return HOME_KEY;
+                        case '8': return END_KEY;
+                    }
+                }
+            } else {
+                switch(seq[1]) {
+                    case 'A': return ARROW_UP;
+                    case 'B': return ARROW_DOWN;
+                    case 'C': return ARROW_RIGHT;
+                    case 'D': return ARROW_LEFT;
+                    case 'H': return HOME_KEY;
+                    case 'F': return END_KEY;
+                }
+            }
+        } else if(seq[0] == 0) {
+            switch(seq[1]) {
+                case 'H': return HOME_KEY;
+                case 'F': return END_KEY;
+            }
         }
-        */
-        fflush(stdout);
-        read(STDIN_FILENO, &c, 1);
+    return '\x1b';
+    }
+    return c;
+}
+void handle_char(struct list **llp, int nc) {
+    struct list *ll = *llp;
+    if(nc >= 0x20 && nc <= 0x7E) {
+        char c = (char) nc;
+        //printable
         if(ll->c != '\0') {
             struct list *nl = create_list(c);
-            nl-> prev = ll;
+            nl->prev = ll;
             ll->next = nl;
-            ll = nl;
+            *llp = nl;
         }
         else {
             ll->c = c;
         }
-        //printf("c: %c\r\n", ll->c);
+        write(STDOUT_FILENO, &((*llp)->c), 1);
+    }
+}
+struct list * readline(void) {
+    char c = '\0';
+    struct list *ll = create_list('\0');
+    struct list *cursor = ll;
+    for(;;) {
+        fflush(stdout);
+        //read(STDIN_FILENO, &c, 1);
+        int nc = readchar();
+        handle_char(&ll, nc);
+        c = (char) nc;
+
         if(c == '\r' || c == '\n') {
             //buf[i] = '\0';
             break;
         }
-        //buf[i] = c;
-        write(STDOUT_FILENO, &ll->c, 1);
-        //printf("Reading %c%d\r\n", buf[i],  i);
-        i++;
     }
     write(STDOUT_FILENO, "\r\n", 2);
+    
     /*
     while(cursor->next != NULL) {
         write(STDOUT_FILENO, &cursor->c, 1);
         cursor = cursor->next;
-    }
-*/
+    } 
+    */
     return cursor;
 }
 
@@ -303,7 +356,7 @@ int main(void)//int argc, char *argv[])
     //ssize_t nread;
     struct token_list tl;
     signal(SIGSEGV, seg_handler);
-    //signal(SIGINT, intHandler);
+    signal(SIGINT, intHandler);
     for(;;) {
         print_prompt();
         fflush(stdout);
