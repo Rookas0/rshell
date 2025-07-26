@@ -17,6 +17,29 @@ struct list {
     struct list *prev;
 };
 
+struct list *create_list(char c) {
+    struct list *my_list = malloc(sizeof(struct list));
+
+    my_list->next = NULL;
+    my_list->prev = NULL;
+    my_list->is_cp = true;
+    my_list->c = c;
+
+    return my_list;
+}
+
+void free_list(struct list* l) {
+    while(l->prev != NULL) {
+        l = l->prev;
+    }
+    struct list *next;
+    while(l != NULL) {
+        next = l->next;
+        free(l);
+        l = next;
+    }
+}
+
 /*** termios ***/ 
 struct termios orig_termios;
 void disable_raw_mode(void) {
@@ -83,9 +106,11 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     };
     tl.tokens = malloc(sizeof(struct token) * init_size);
     char buf[32];
+    buf[0] = '\0';
     // read line. when space hit 
     //printf("Line is %ld long\r\n", strlen(line));
     int j = 0;
+    struct list *ol = line;
     do {
         char c = line->c;
 
@@ -132,6 +157,7 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }
+    free_list(ol);
     return tl;
 }
 
@@ -214,17 +240,6 @@ void seg_handler(int sig) {
 }
     
 
-struct list *create_list(char c) {
-    struct list *my_list = malloc(sizeof(struct list));
-
-    my_list->next = NULL;
-    my_list->prev = NULL;
-    my_list->is_cp = true;
-    my_list->c = c;
-
-    return my_list;
-}
-
 void append_list(struct list* ll) {
     
 }
@@ -232,19 +247,21 @@ void append_list(struct list* ll) {
 // process key press. 
 //
 struct list * readline(void) {
-    char *buf = malloc(sizeof(char) * 16); 
+    //char *buf = malloc(sizeof(char) * 16); 
     int bcap = 16;
     char c = '\0';
-    buf[0] = '\0';
+    //buf[0] = '\0';
     //printf("TEST\r\n");
     int i = 0;
     struct list *ll = create_list('\0');
     struct list *cursor = ll;
     for(;;) {
+        /*
         if(i >= bcap -1) {
             bcap *= 2;
             buf = realloc(buf, bcap);
         }
+        */
         fflush(stdout);
         read(STDIN_FILENO, &c, 1);
         if(ll->c != '\0') {
@@ -258,7 +275,7 @@ struct list * readline(void) {
         }
         //printf("c: %c\r\n", ll->c);
         if(c == '\r' || c == '\n') {
-            buf[i] = '\0';
+            //buf[i] = '\0';
             break;
         }
         //buf[i] = c;
@@ -305,7 +322,6 @@ int main(void)//int argc, char *argv[])
         */
         struct list *line = readline();
         tl = tokenize(line); //, size);
-        free(line);
         printf("After tokenize\r\n");
         handle_tokens(tl);
         free_tokens(&tl);
