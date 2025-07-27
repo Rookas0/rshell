@@ -28,6 +28,11 @@ struct list {
     struct list *prev;
 };
 
+struct line_info {
+    int posx;
+};
+
+struct line_info line_info;
 struct list *create_list(char c) {
     struct list *my_list = malloc(sizeof(struct list));
 
@@ -236,8 +241,19 @@ int handle_tokens(struct token_list tl) {
     return 0;
 }
 
-void print_prompt(void) {
-    printf("> ");
+void print_prompt(struct list *head) {
+    char *prompt = "> ";
+    printf("%s", prompt);
+    while(head != NULL) {
+        fflush(stdout);
+        write(STDOUT_FILENO, &head->c, 1);
+        head = head->next;
+    }
+    char buf[16];
+    if(line_info.posx != 0) {
+        sprintf(buf, "\r\x1b[%dC", line_info.posx + strlen(prompt));
+        write(STDOUT_FILENO, buf, strlen(buf));
+    }
 }
 
 void intHandler(int sig) { 
@@ -302,32 +318,51 @@ int readchar(void) {
     }
     return c;
 }
-void handle_char(struct list **llp, int nc) {
-    struct list *ll = *llp;
+void handle_char(struct list **cursor_p, int nc) {
+    struct list *cursor = *cursor_p;
+    // sruct list *lp = malloc 
+    //
     if(nc >= 0x20 && nc <= 0x7E) {
+
         char c = (char) nc;
+        line_info.posx++;
         //printable
-        if(ll->c != '\0') {
-            struct list *nl = create_list(c);
-            nl->prev = ll;
-            ll->next = nl;
-            *llp = nl;
+        if(cursor->c != '\0') {
+            struct list *new_list = create_list(c);
+            new_list->prev = cursor;
+            new_list->next = cursor->next;
+            cursor->next = new_list;
+            *cursor_p = new_list;
         }
         else {
-            ll->c = c;
+            cursor->c = c;
         }
-        write(STDOUT_FILENO, &((*llp)->c), 1);
+        write(STDOUT_FILENO, &((*cursor_p)->c), 1);
     }
+    if(nc == ARROW_LEFT) {
+        printf("hello\r\n");
+        if(cursor->prev != NULL) {
+            *cursor_p = cursor->prev;
+            line_info.posx--;
+            write(STDOUT_FILENO, "\x1b[1D", 4);
+        }
+    }
+
 }
 struct list * readline(void) {
     char c = '\0';
-    struct list *ll = create_list('\0');
-    struct list *cursor = ll;
+    struct list *cursor = create_list('\0');
+    struct list *head = cursor;
+    line_info.posx = 0;
     for(;;) {
         fflush(stdout);
         //read(STDIN_FILENO, &c, 1);
         int nc = readchar();
-        handle_char(&ll, nc);
+        handle_char(&cursor, nc);
+        // clear line and rewrite
+        write(STDOUT_FILENO, "\r\x1b[K", 4);
+        print_prompt(head);
+        struct list *tmp = head;
         c = (char) nc;
 
         if(c == '\r' || c == '\n') {
@@ -336,6 +371,7 @@ struct list * readline(void) {
         }
     }
     write(STDOUT_FILENO, "\r\n", 2);
+    line_info.posx = 0;
     
     /*
     while(cursor->next != NULL) {
@@ -343,7 +379,7 @@ struct list * readline(void) {
         cursor = cursor->next;
     } 
     */
-    return cursor;
+    return head;
 }
 
 
@@ -358,7 +394,7 @@ int main(void)//int argc, char *argv[])
     signal(SIGSEGV, seg_handler);
     signal(SIGINT, intHandler);
     for(;;) {
-        print_prompt();
+        print_prompt(NULL);
         fflush(stdout);
         //nread = getline(&line, &size, stdin);
         /*
