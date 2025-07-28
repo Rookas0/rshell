@@ -127,6 +127,10 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     //printf("Line is %ld long\r\n", strlen(line));
     int j = 0;
     struct list *ol = line;
+    if(line->c == '\0' && line->next != NULL) {
+        line = line->next;
+    }
+
     do {
         char c = line->c;
         if(c != ' ') {
@@ -243,7 +247,7 @@ int handle_tokens(struct token_list tl) {
 
 void print_prompt(struct list *head) {
     char *prompt = "> ";
-    printf("%s", prompt);
+    write(STDOUT_FILENO, prompt, strlen(prompt));
     while(head != NULL) {
         fflush(stdout);
         write(STDOUT_FILENO, &head->c, 1);
@@ -253,7 +257,11 @@ void print_prompt(struct list *head) {
     if(line_info.posx != 0) {
         sprintf(buf, "\r\x1b[%dC", line_info.posx + strlen(prompt));
         write(STDOUT_FILENO, buf, strlen(buf));
+    } else {
+        sprintf(buf, "\r\x1b[%dC", (int) strlen(prompt));
+        write(STDOUT_FILENO, buf, strlen(buf));
     }
+
 }
 
 void intHandler(int sig) { 
@@ -318,34 +326,81 @@ int readchar(void) {
     }
     return c;
 }
-void handle_char(struct list **cursor_p, int nc) {
+
+void insert_char_at_cursor(struct list **cursor_p, char c)
+{
+    
+    struct list *cursor = *cursor_p;
+    line_info.posx++;
+    //printable
+    //if(cursor->c != '\0') {
+        struct list *new_list = create_list(c);
+        new_list->prev = cursor;
+        new_list->next = cursor->next;
+        cursor->next = new_list;
+        *cursor_p = new_list;
+    //}
+    /*
+    else {
+        cursor->c = c;
+    }
+    */
+    write(STDOUT_FILENO, &((*cursor_p)->c), 1);
+}
+
+void move_cursor_left(struct list **cursor_p)
+{
+    struct list *cursor = *cursor_p;
+    if(cursor != NULL && cursor->c != '\0') {
+        *cursor_p = cursor->prev;
+        line_info.posx--;
+        //write(STDOUT_FILENO, "\x1b[1D", 4);
+    }
+}
+
+void move_cursor_right(struct list **cursor_p)
+{
+    struct list *cursor = *cursor_p;
+    if(cursor->next != NULL) {
+        *cursor_p = cursor->next;
+        line_info.posx++;
+        //write(STDOUT_FILENO, "\x1b[1D", 4);
+    }
+}
+
+void delete_at_cursor(struct list **cursor_p) {
+    struct list *cursor = *cursor_p;
+    if(cursor->c != '\0') {
+        cursor->prev->next = cursor->next;
+        if(cursor-> next != NULL) {
+            cursor->next->prev = cursor->prev;
+        }
+        free(*cursor_p);
+        *cursor_p = cursor;
+    }
+    move_cursor_left(cursor_p);
+}
+void handle_char(struct list **cursor_p, int nc)
+{
     struct list *cursor = *cursor_p;
     // sruct list *lp = malloc 
-    //
+    //  TODO: refactor to make list start at a null char node. 
+    //        this will allow cursor to be at start of line before any other nodes.
+    //        when printing, skip when node->c == '\0'
+    //        also implement right arrow and backspace 
+    printf("%d\r\n", nc);
     if(nc >= 0x20 && nc <= 0x7E) {
-
         char c = (char) nc;
-        line_info.posx++;
-        //printable
-        if(cursor->c != '\0') {
-            struct list *new_list = create_list(c);
-            new_list->prev = cursor;
-            new_list->next = cursor->next;
-            cursor->next = new_list;
-            *cursor_p = new_list;
-        }
-        else {
-            cursor->c = c;
-        }
-        write(STDOUT_FILENO, &((*cursor_p)->c), 1);
+        insert_char_at_cursor(cursor_p, c);
     }
     if(nc == ARROW_LEFT) {
-        printf("hello\r\n");
-        if(cursor->prev != NULL) {
-            *cursor_p = cursor->prev;
-            line_info.posx--;
-            write(STDOUT_FILENO, "\x1b[1D", 4);
-        }
+        move_cursor_left(cursor_p);
+    }
+    if(nc == ARROW_RIGHT) {
+        move_cursor_right(cursor_p);
+    }
+    if(nc == 0x7F) {
+        delete_at_cursor(cursor_p);
     }
 
 }
