@@ -9,6 +9,8 @@
 #include <termios.h>
 #include <stdbool.h>
 
+#include "./term/term.h"
+#include "./list/list.h"
 enum shell_key {
     ARROW_LEFT =  1000,
     ARROW_DOWN,
@@ -20,65 +22,13 @@ enum shell_key {
     PAGE_UP,
     PAGE_DOWN
 };
-/*** line reader ***/
-struct list {
-    char c;
-    bool is_cp;
-    struct list *next;
-    struct list *prev;
-};
 
+/*** line reader ***/
 struct line_info {
     int posx;
 };
 
 struct line_info line_info;
-struct list *create_list(char c) {
-    struct list *my_list = malloc(sizeof(struct list));
-
-    my_list->next = NULL;
-    my_list->prev = NULL;
-    my_list->is_cp = true;
-    my_list->c = c;
-
-    return my_list;
-}
-
-void free_list(struct list* l) {
-    while(l->prev != NULL) {
-        l = l->prev;
-    }
-    struct list *next;
-    while(l != NULL) {
-        next = l->next;
-        free(l);
-        l = next;
-    }
-}
-
-/*** termios ***/ 
-struct termios orig_termios;
-void disable_raw_mode(void) {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-}
-
-void enable_raw_mode(void) {
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-        perror("tcgetattr");
-        exit(EXIT_FAILURE);
-    }
-
-    struct termios raw = orig_termios;
-
-    atexit(disable_raw_mode);
-
-    cfmakeraw(&raw);
-
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-        perror("tcsetattr");
-        exit(EXIT_FAILURE);
-    }
-}
 
 /*** TOKENIZER ***/
 
@@ -113,7 +63,7 @@ void free_tokens(struct token_list *list) {
 }
 
 struct token_list tokenize(struct list *line) {//, size_t size) {
-    // let's start with enough space for 5 tokens, and if there's more allocate
+    // TODO: implement quotation marks.
     long init_size = 4;
     struct token_list tl = {
         .tokens = NULL,
@@ -152,29 +102,6 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
         j++;
         if(c == '\r') break;
     }while (line != NULL && line->c != '\0');
-    /*
-    for(int i = 0, j = 0; i <= strlen(line); i++) {
-        // if normal char (not whitespace or newline or eof, add to token
-        //printf("i: %d, char: %c\r\n", i, line[i]);
-        //fflush(stdout);
-        if(line[i] == ' ' || line[i] == '\r' || line[i] == '\0') {
-            struct token t;
-            printf("Adding %s\r\n", buf);
-            fflush(stdout);
-            t.value = strdup(buf);
-            //memcpy(t.value, buf, strlen(buf));
-            memset(buf, 0, sizeof(buf));
-            j = 0;
-            add_token(&tl, t);
-            continue;
-        }
-        buf[j] = line[i];
-        buf[j+1] = '\0';
-        j++;
-        if(line[i] == '\n') break;
-    }
-    */
-    //add_token(&tl, (struct token) {.value = NULL});
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }
@@ -388,7 +315,6 @@ void handle_char(struct list **cursor_p, int nc)
     //        this will allow cursor to be at start of line before any other nodes.
     //        when printing, skip when node->c == '\0'
     //        also implement right arrow and backspace 
-    printf("%d\r\n", nc);
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
         insert_char_at_cursor(cursor_p, c);
