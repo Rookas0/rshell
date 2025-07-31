@@ -120,11 +120,13 @@ void delete_at_cursor(struct list **cursor_p) {
         if(cursor-> next != NULL) {
             cursor->next->prev = cursor->prev;
         }
+        struct list *prev = cursor->prev;
         free(*cursor_p);
-        *cursor_p = cursor;
+        *cursor_p = prev;
+        line_info.posx--;
     }
-    move_cursor_left(cursor_p);
 }
+
 void handle_char(struct list **cursor_p, int nc)
 {
     //struct list *cursor = *cursor_p;
