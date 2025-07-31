@@ -9,3 +9,5 @@ build/
 src/.cache/
 
 compile_commands.json
+
+.cache/
