@@ -7,3 +7,5 @@ shell
 build/
 
 src/.cache/
+
+compile_commands.json

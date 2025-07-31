@@ -1,4 +1,10 @@
 /*** termios ***/ 
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <termios.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "term.h"
 struct termios orig_termios;
 void disable_raw_mode(void) {
