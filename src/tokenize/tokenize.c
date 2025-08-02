@@ -4,6 +4,9 @@
 #include <stdlib.h>
 
 #include "./tokenize.h"
+enum State { NORMAL, IN_QUOTE };
+
+enum State state = NORMAL;
 /*** TOKENIZER ***/
 
 void add_token(struct token_list *list, struct token t) {
@@ -47,25 +50,52 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     }
 
     do {
+        // if " hit, go into string state, and create a single token until " is reached
         char c = cursor->c;
-        if(c != ' ') {
-            buf[j] = c;
-            buf[j+1] = '\0';
-        }
-        if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
-            struct token t;
+        if(state == NORMAL) {
+            if(c != ' ') {
+                buf[j] = c;
+                buf[j+1] = '\0';
+                j++;
+            }
+            if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
+                struct token t;
+                fflush(stdout);
+                t.value = strdup(buf);
+                memset(buf, 0, sizeof(buf));
+                j = 0;
+                add_token(&tl, t);
+                cursor = cursor->next;
+                continue;
+            }
+            if(c == '"') {
+                state = IN_QUOTE;
+                j = 0;
+            }
             fflush(stdout);
-            t.value = strdup(buf);
-            memset(buf, 0, sizeof(buf));
-            j = 0;
-            add_token(&tl, t);
             cursor = cursor->next;
-            continue;
+            if(c == '\r') break;
+        } else {
+            printf("%c\r\n", c);
+            fflush(stdout);
+            if(c == '"') {
+                state = NORMAL;
+                struct token t;
+                fflush(stdout);
+                t.value = strdup(buf);
+                memset(buf, 0, sizeof(buf));
+                j = 0;
+                add_token(&tl, t);
+                cursor = cursor->next;
+                j++;
+                continue;
+            } else {
+                buf[j] = c;
+                buf[j+1] = '\0';
+                j++;
+                cursor = cursor->next;
+            }
         }
-        fflush(stdout);
-        cursor = cursor->next;
-        j++;
-        if(c == '\r') break;
     }while (cursor != NULL && cursor->c != '\0');
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
