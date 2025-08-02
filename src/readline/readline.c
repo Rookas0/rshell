@@ -75,26 +75,9 @@ int readchar(void) {
 
 void insert_char_at_cursor(struct list *lst, char c)
 {
-    
-    struct node *cursor = lst->cursor;
-    line_info.posx++;
-    //printable
-    //if(cursor->c != '\0') {
-    struct node *new_node = create_node(c);
-    printf("insert\r\n");
-    if(cursor != NULL) {
-        new_node->prev = cursor;
-        new_node->next = cursor->next;
-        cursor->next = new_node;
-        lst->cursor = new_node;
+    if(list_insert_after_cursor(lst, c)) {
+        line_info.posx++;
     }
-    //}
-    /*
-    else {
-        cursor->c = c;
-    }
-    */
-    write(STDOUT_FILENO, &lst->cursor->c, 1);
 }
 
 void move_cursor_left(struct list *lst)

@@ -43,6 +43,23 @@ bool list_move_cursor_right(struct list *lst)
     return false;
 }
 
+bool list_insert_after_cursor(struct list *lst, char c)
+{
+    struct node *cursor = lst->cursor;
+    //printable
+    //if(cursor->c != '\0') {
+    struct node *new_node = create_node(c);
+    if(cursor != NULL) {
+        new_node->prev = cursor;
+        new_node->next = cursor->next;
+        cursor->next = new_node;
+        lst->cursor = new_node;
+
+        return true;
+    }
+    return false;
+
+}
 bool list_delete_at_cursor(struct list *lst)
 {
     struct node *cursor = lst->cursor;
