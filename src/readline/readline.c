@@ -79,11 +79,15 @@ void insert_char_at_cursor(struct list **cursor_p, char c)
     line_info.posx++;
     //printable
     //if(cursor->c != '\0') {
-        struct list *new_list = create_list(c);
+    struct list *new_list = create_list(c);
+
+    if(cursor != NULL) {
+
         new_list->prev = cursor;
-        new_list->next = cursor->next;
+
         cursor->next = new_list;
         *cursor_p = new_list;
+    }
     //}
     /*
     else {
@@ -106,7 +110,7 @@ void move_cursor_left(struct list **cursor_p)
 void move_cursor_right(struct list **cursor_p)
 {
     struct list *cursor = *cursor_p;
-    if(cursor->next != NULL) {
+    if(cursor != NULL && cursor->next != NULL) {
         *cursor_p = cursor->next;
         line_info.posx++;
         //write(STDOUT_FILENO, "\x1b[1D", 4);
@@ -115,7 +119,7 @@ void move_cursor_right(struct list **cursor_p)
 
 void delete_at_cursor(struct list **cursor_p) {
     struct list *cursor = *cursor_p;
-    if(cursor->c != '\0') {
+    if(cursor != NULL && cursor->c != '\0') {
         cursor->prev->next = cursor->next;
         if(cursor-> next != NULL) {
             cursor->next->prev = cursor->prev;

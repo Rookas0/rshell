@@ -45,15 +45,6 @@ void seg_handler(int sig) {
     printf("\nseg fault\n");
     exit(1);
 }
-    
-
-void append_list(struct list* ll) {
-    
-}
-// read key press as int.
-// process key press. 
-//
-
 
 int main(void)//int argc, char *argv[])
 {
