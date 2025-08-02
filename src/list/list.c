@@ -1,24 +1,76 @@
 #include "list.h"
 
-struct list *create_list(char c) {
+struct list *create_list(void) {
     struct list *my_list = malloc(sizeof(struct list));
+    struct node *dummy = malloc(sizeof(struct node));
 
-    my_list->next = NULL;
-    my_list->prev = NULL;
-    my_list->is_cp = true;
-    my_list->c = c;
-
+    dummy->next = NULL;
+    dummy->prev = NULL;
+    dummy->is_cp = true;
+    dummy->c = '\0';
+    my_list->HEAD = dummy;
+    my_list->cursor = dummy;
     return my_list;
 }
 
+struct node *create_node(char c) {
+    struct node *n = malloc(sizeof(struct node));
+    n->next = NULL;
+    n->prev = NULL;
+    n->c = c;
+    return n;
+}
+
+bool list_move_cursor_left(struct list *lst)
+{
+    
+    struct node *cursor = lst->cursor;
+    if(cursor != NULL && cursor->c != '\0') {
+        lst->cursor = cursor->prev;
+        return true;
+    }
+    return false;
+}
+
+bool list_move_cursor_right(struct list *lst)
+{
+    
+    struct node *cursor = lst->cursor;
+    if(cursor != NULL && cursor->next != NULL) {
+        lst->cursor = cursor->next;
+        return true;
+    }
+    return false;
+}
+
+bool list_delete_at_cursor(struct list *lst)
+{
+    struct node *cursor = lst->cursor;
+    if(cursor != NULL && cursor->c != '\0') {
+        cursor->prev->next = cursor->next;
+        if(cursor-> next != NULL) {
+            cursor->next->prev = cursor->prev;
+        }
+        struct node *prev = cursor->prev;
+        free(cursor);
+        lst->cursor = prev;
+
+        return true;
+    }
+
+    return false;
+}
 void free_list(struct list* l) {
-    while(l->prev != NULL) {
-        l = l->prev;
+    struct node *cursor = l->HEAD;
+
+    while(cursor->prev != NULL) {
+        cursor = cursor->prev;
     }
-    struct list *next;
-    while(l != NULL) {
-        next = l->next;
-        free(l);
-        l = next;
+    struct node *next;
+    while(cursor != NULL) {
+        next = cursor->next;
+        free(cursor);
+        cursor = next;
     }
+    free(l);
 }

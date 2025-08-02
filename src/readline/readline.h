@@ -20,9 +20,9 @@ struct line_info {
 extern struct line_info line_info;
 void print_prompt(struct list *head, char * prompt);
 int readchar(void);
-void insert_char_at_cursor(struct list **cursor_p, char c);
-void move_cursor_left(struct list **cursor_p);
-void move_cursor_right(struct list **cursor_p);
-void delete_at_cursor(struct list **cursor_p);
-void handle_char(struct list **cursor_p, int nc);
+void insert_char_at_cursor(struct list *lst, char c);
+void move_cursor_left(struct list *lst);
+void move_cursor_right(struct list *lst);
+void delete_at_cursor(struct list *lst);
+void handle_char(struct list *lst, int nc);
 struct list * readline(char *prompt);

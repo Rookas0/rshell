@@ -41,31 +41,32 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
     //printf("Line is %ld long\r\n", strlen(line));
     int j = 0;
     struct list *ol = line;
-    if(line->c == '\0' && line->next != NULL) {
-        line = line->next;
+    struct node *cursor = line->HEAD;
+    if(cursor->c == '\0' && cursor->next != NULL) {
+        cursor = cursor->next;
     }
 
     do {
-        char c = line->c;
+        char c = cursor->c;
         if(c != ' ') {
             buf[j] = c;
             buf[j+1] = '\0';
         }
-        if(c == ' ' || c == '\r' || c == '\0' || line->next == NULL) {
+        if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
             struct token t;
             fflush(stdout);
             t.value = strdup(buf);
             memset(buf, 0, sizeof(buf));
             j = 0;
             add_token(&tl, t);
-            line = line->next;
+            cursor = cursor->next;
             continue;
         }
         fflush(stdout);
-        line = line->next;
+        cursor = cursor->next;
         j++;
         if(c == '\r') break;
-    }while (line != NULL && line->c != '\0');
+    }while (cursor != NULL && cursor->c != '\0');
     for (int i = 0; i < tl.size; i++) {
         printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }

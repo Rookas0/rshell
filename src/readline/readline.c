@@ -6,16 +6,17 @@
  
 struct line_info line_info;
 
-void print_prompt(struct list *head, char * prompt) {
+void print_prompt(struct list *lst, char * prompt) {
+    struct node *n = lst->HEAD;
     if(prompt == NULL) {
         prompt = "> ";
     }
     write(STDOUT_FILENO, "\r", 1);
     write(STDOUT_FILENO, prompt, strlen(prompt));
-    while(head != NULL) {
+    while(n != NULL) {
         fflush(stdout);
-        write(STDOUT_FILENO, &head->c, 1);
-        head = head->next;
+        write(STDOUT_FILENO, &n->c, 1);
+        n = n->next;
     }
     char buf[16];
     if(line_info.posx != 0) {
@@ -72,21 +73,20 @@ int readchar(void) {
     return c;
 }
 
-void insert_char_at_cursor(struct list **cursor_p, char c)
+void insert_char_at_cursor(struct list *lst, char c)
 {
     
-    struct list *cursor = *cursor_p;
+    struct node *cursor = lst->cursor;
     line_info.posx++;
     //printable
     //if(cursor->c != '\0') {
-    struct list *new_list = create_list(c);
-
+    struct node *new_node = create_node(c);
+    printf("insert\r\n");
     if(cursor != NULL) {
-
-        new_list->prev = cursor;
-
-        cursor->next = new_list;
-        *cursor_p = new_list;
+        new_node->prev = cursor;
+        new_node->next = cursor->next;
+        cursor->next = new_node;
+        lst->cursor = new_node;
     }
     //}
     /*
@@ -94,44 +94,31 @@ void insert_char_at_cursor(struct list **cursor_p, char c)
         cursor->c = c;
     }
     */
-    write(STDOUT_FILENO, &((*cursor_p)->c), 1);
+    write(STDOUT_FILENO, &lst->cursor->c, 1);
 }
 
-void move_cursor_left(struct list **cursor_p)
+void move_cursor_left(struct list *lst)
 {
-    struct list *cursor = *cursor_p;
-    if(cursor != NULL && cursor->c != '\0') {
-        *cursor_p = cursor->prev;
+    if(list_move_cursor_left(lst)) {
         line_info.posx--;
-        //write(STDOUT_FILENO, "\x1b[1D", 4);
     }
 }
 
-void move_cursor_right(struct list **cursor_p)
+void move_cursor_right(struct list *lst)
 {
-    struct list *cursor = *cursor_p;
-    if(cursor != NULL && cursor->next != NULL) {
-        *cursor_p = cursor->next;
+    if(list_move_cursor_right(lst)) {
         line_info.posx++;
-        //write(STDOUT_FILENO, "\x1b[1D", 4);
     }
 }
 
-void delete_at_cursor(struct list **cursor_p) {
-    struct list *cursor = *cursor_p;
-    if(cursor != NULL && cursor->c != '\0') {
-        cursor->prev->next = cursor->next;
-        if(cursor-> next != NULL) {
-            cursor->next->prev = cursor->prev;
-        }
-        struct list *prev = cursor->prev;
-        free(*cursor_p);
-        *cursor_p = prev;
+void delete_at_cursor(struct list *lst) 
+{
+    if(list_delete_at_cursor(lst)) {
         line_info.posx--;
     }
 }
 
-void handle_char(struct list **cursor_p, int nc)
+void handle_char(struct list *lst, int nc)
 {
     //struct list *cursor = *cursor_p;
     // sruct list *lp = malloc 
@@ -141,30 +128,29 @@ void handle_char(struct list **cursor_p, int nc)
     //        also implement right arrow and backspace 
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
-        insert_char_at_cursor(cursor_p, c);
+        insert_char_at_cursor(lst, c);
     }
     if(nc == ARROW_LEFT) {
-        move_cursor_left(cursor_p);
+        move_cursor_left(lst);
     }
     if(nc == ARROW_RIGHT) {
-        move_cursor_right(cursor_p);
+        move_cursor_right(lst);
     }
     if(nc == 0x7F) {
-        delete_at_cursor(cursor_p);
+        delete_at_cursor(lst);
     }
 
 }
 struct list * readline(char *prompt) {
     char c = '\0';
-    struct list *cursor = create_list('\0');
-    struct list *head = cursor;
+    struct list *lst = create_list();
     line_info.posx = 0;
     for(;;) {
-        print_prompt(head, prompt);
+        print_prompt(lst, prompt);
         fflush(stdout);
         //read(STDIN_FILENO, &c, 1);
         int nc = readchar();
-        handle_char(&cursor, nc);
+        handle_char(lst, nc);
         // clear line and rewrite
         write(STDOUT_FILENO, "\r\x1b[K", 4);
         //struct list *tmp = head;
@@ -175,7 +161,7 @@ struct list * readline(char *prompt) {
             break;
         }
     }
-    print_prompt(head, prompt);
+    print_prompt(lst, prompt);
     write(STDOUT_FILENO, "\r\n", 2);
     line_info.posx = 0;
     
@@ -185,5 +171,5 @@ struct list * readline(char *prompt) {
         cursor = cursor->next;
     } 
     */
-    return head;
+    return lst;
 }
