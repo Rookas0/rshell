@@ -66,6 +66,13 @@ void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum 
     add_token(tl, t);
 
 }
+/*
+ * Given a linked list of text, deliminated by whitespace,
+ * produces an array of tokens
+ * These tokens have a string and a token type of word, operator, or string.
+ * Maybe more types will be added later.
+ */
+
 
 struct token_list *tokenize(struct list *line) {//, size_t size) {
     enum state state = NORMAL;
