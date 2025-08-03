@@ -106,17 +106,15 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
                 add_token_from_buff(tl, buf, sizeof(buf));
                 if (cursor->next != NULL) {
                     cursor = cursor->next;
+                    c = cursor->c;
                 }
-                while(cursor != NULL && strchr(DELIMS, c)) {
+                while(cursor != NULL && strchr(DELIMS, cursor->c)) {
                     cursor = cursor->next;
-                    if(cursor != NULL) {
-                        c = cursor->c;
-                    }
                 }
                 i = 0;
             } else {
                 buf[i++] = c;
-                buf[i+1] = '\0';
+                buf[i] = '\0';
                 cursor = cursor->next;
             }
         }
