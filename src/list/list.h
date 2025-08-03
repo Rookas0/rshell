@@ -21,5 +21,6 @@ bool list_move_cursor_left(struct list *lst);
 bool list_move_cursor_right(struct list *lst);
 
 bool list_insert_after_cursor(struct list *lst, char c);
+bool list_append_char(struct list *lst, char c);
 bool list_delete_at_cursor(struct list *lst);
 void free_list(struct list* l);

@@ -4,10 +4,14 @@
 #include <stdlib.h>
 
 #include "./tokenize.h"
-enum State { NORMAL, IN_QUOTE };
+#include "../list/list.h"
 
-enum State state = NORMAL;
+
+
 /*** TOKENIZER ***/
+
+static const char *DELIMS = " \t\r\n";
+static const char *OPERATORS = "|><&";
 
 void add_token(struct token_list *list, struct token t) {
     if(list->size >= list->capacity) {
@@ -24,86 +28,125 @@ void add_token(struct token_list *list, struct token t) {
 
 void free_tokens(struct token_list *list) {
     for(int i = 0; i < list->size; i++ ) {
+        printf("Freeing: %s\r\n", list->tokens[i]);
         free(list->tokens[i].value);
     }
     free(list->tokens);
+    free(list);
 }
 
-struct token_list tokenize(struct list *line) {//, size_t size) {
-    // TODO: implement quotation marks.
+
+/*
+ * Expected behavior.
+ * ls -ali.             ls and -ali are two tokens
+ * ls       -ali.       ls and -ali are two tokens
+ * "ls -ali"            "ls -ali" is one token
+ * ls -a"li"            ls is one token and -ali is one token
+ */
+
+void init_token_list(struct token_list *tl)
+{
     long init_size = 4;
-    struct token_list tl = {
-        .tokens = NULL,
-        .capacity = init_size,
-        .size = 0
-    };
-    tl.tokens = malloc(sizeof(struct token) * init_size);
+
+    tl->tokens = malloc(sizeof(struct token) * init_size);
+    tl->capacity = init_size;
+    tl->size = 0;
+}
+
+void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum type type)
+{
+    if(strlen(buf) == 0) {
+        return;
+    }
+    struct token t;
+    fflush(stdout);
+    t.value = strdup(buf);
+    t.type = type;
+    memset(buf, 0, bufsize);
+    add_token(tl, t);
+
+}
+/*
+ * Given a linked list of text, deliminated by whitespace,
+ * produces an array of tokens
+ * These tokens have a string and a token type of word, operator, or string.
+ * Maybe more types will be added later.
+ */
+
+
+struct token_list *tokenize(struct list *line) {//, size_t size) {
+    enum state state = NORMAL;
+    long init_size = 4;
+
+    struct token_list *tl = malloc(sizeof(struct token_list));
+    init_token_list(tl);
     char buf[32];
     buf[0] = '\0';
-    // read line. when space hit 
-    //printf("Line is %ld long\r\n", strlen(line));
-    int j = 0;
-    struct list *ol = line;
+    int i = 0;
     struct node *cursor = line->HEAD;
+
     if(cursor->c == '\0' && cursor->next != NULL) {
         cursor = cursor->next;
     }
 
-    do {
-        // if " hit, go into string state, and create a single token until " is reached
+    while(cursor != NULL ) {
         char c = cursor->c;
-        if(state == NORMAL) {
-            if(c != ' ') {
-                buf[j] = c;
-                buf[j+1] = '\0';
-                j++;
-            }
-            if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
-                printf("%d\r\n", strlen(buf));
-                if(strlen(buf) == 0) {
-                    continue;
+        if (state == NORMAL) {
+            if(strchr(DELIMS, c)) {
+                add_token_from_buff(tl, buf, sizeof(buf), WORD);
+                i = 0;
+                // skip over rest of delims
+                while(cursor != NULL && strchr(DELIMS, c)) {
+                    cursor = cursor->next;
+                    if(cursor != NULL) {
+                        c = cursor->c;
+                    }
                 }
-                struct token t;
-                fflush(stdout);
-                t.value = strdup(buf);
-                memset(buf, 0, sizeof(buf));
-                j = 0;
-                add_token(&tl, t);
-                cursor = cursor->next;
-                continue;
-            }
-            if(c == '"') {
+            } else if (strchr(OPERATORS, c)) {
+                add_token_from_buff(tl, buf, sizeof(buf), WORD);
+                i = 0;
+                buf[i++] = c;
+                if (cursor->next != NULL && cursor->next->c == c) {
+                    buf[i++] = c; 
+                    cursor = cursor-> next;
+                }
+                if (cursor->next != NULL) {
+                    cursor = cursor-> next;
+                }
+                buf[i] = '\0';
+                add_token_from_buff(tl, buf, sizeof(buf), OPERATOR);
+                i = 0;
+            }else if (c == '"') {
                 state = IN_QUOTE;
-                j = 0;
-            }
-            fflush(stdout);
-            cursor = cursor->next;
-            if(c == '\r') break;
-        } else {
-            printf("%c\r\n", c);
-            fflush(stdout);
-            if(c == '"') {
-                state = NORMAL;
-                struct token t;
-                fflush(stdout);
-                t.value = strdup(buf);
-                memset(buf, 0, sizeof(buf));
-                j = 0;
-                add_token(&tl, t);
                 cursor = cursor->next;
-                j++;
-                continue;
             } else {
-                buf[j] = c;
-                buf[j+1] = '\0';
-                j++;
+                buf[i++] = c;
+                buf[i] = '\0';
+                cursor = cursor->next;
+            }
+        } else if (state == IN_QUOTE) {
+            if (c == '"') {
+                add_token_from_buff(tl, buf, sizeof(buf), STRING);
+                state = NORMAL;
+                if (cursor->next != NULL) {
+                    cursor = cursor->next;
+                    c = cursor->c;
+                }
+                while(cursor != NULL && strchr(DELIMS, cursor->c)) {
+                    cursor = cursor->next;
+                }
+                i = 0;
+            } else {
+                buf[i++] = c;
+                buf[i] = '\0';
                 cursor = cursor->next;
             }
         }
-    }while (cursor != NULL && cursor->c != '\0');
-    for (int i = 0; i < tl.size; i++) {
-        printf("Token %d: %s\r\n", i, tl.tokens[i].value);
     }
-    free_list(ol);
+
+    for (int i = 0; i < tl->size; i++) {
+        printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
+    }
+    free_list(line);
     return tl;
 }

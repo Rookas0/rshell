@@ -17,19 +17,19 @@
 #include "./exec/builtins/builtins.h"
 
 
-int handle_tokens(struct token_list tl) {
+int handle_tokens(struct token_list *tl) {
     char * cmd = NULL;
-    cmd = tl.tokens[0].value;
+    cmd = tl->tokens[0].value;
     if(strcmp(cmd, "cd") == 0) {
-        cd(tl.tokens[1].value);
+        cd(tl->tokens[1].value);
         //printf("built-ins\r\n");
     } else if(strcmp(cmd, "exit") == 0) {
-        exec_exit(&tl);
+        exec_exit(tl);
         printf("Why are we here...\r\n");
     }
     else {
         printf("Exec else\r\n");
-        exec_cmd(&tl);
+        exec_cmd(tl);
     }
     return 0;
 }
@@ -53,31 +53,16 @@ int main(void)//int argc, char *argv[])
     size_t size = 0;
     ssize_t nread;
     //ssize_t nread;
-    struct token_list tl;
+    struct token_list *tl;
     signal(SIGSEGV, seg_handler);
     signal(SIGINT, intHandler);
     for(;;) {
         fflush(stdout);
-        //nread = getline(&line, &size, stdin);
-        /*
-        if(nread == -1) {
-            if(errno == EINTR) {
-                printf("getline int\r\n");
-                continue;
-            }
-            else {
-                perror("getline");
-                break;
-            }
-        }
-        */
         struct list *line = readline("> ");
         tl = tokenize(line); //, size);
         printf("After tokenize\r\n");
         handle_tokens(tl);
-        free_tokens(&tl);
-        //handle line
-        // read input
+        free_tokens(tl);
     }
     return EXIT_SUCCESS;
 }

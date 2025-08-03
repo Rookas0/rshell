@@ -101,6 +101,11 @@ void delete_at_cursor(struct list *lst)
     }
 }
 
+void append_enter(struct list *lst) {
+    char c = '\r';
+    list_append_char(lst, c);
+}
+
 void handle_char(struct list *lst, int nc)
 {
     //struct list *cursor = *cursor_p;
@@ -122,6 +127,9 @@ void handle_char(struct list *lst, int nc)
     if(nc == 0x7F) {
         delete_at_cursor(lst);
     }
+    if(nc == 0x0A) {
+        append_enter(lst);
+    }
 
 }
 struct list * readline(char *prompt) {
@@ -140,6 +148,7 @@ struct list * readline(char *prompt) {
         c = (char) nc;
 
         if(c == '\r' || c == '\n') {
+            append_enter(lst);
             //buf[i] = '\0';
             break;
         }
