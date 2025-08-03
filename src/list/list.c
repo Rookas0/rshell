@@ -60,6 +60,16 @@ bool list_insert_after_cursor(struct list *lst, char c)
     return false;
 
 }
+
+bool list_append_char(struct list *lst, char c)
+{
+    struct node *cursor = lst->cursor;
+    while(cursor != NULL && cursor->next != NULL) {
+        cursor = cursor->next;
+    }
+
+    list_insert_after_cursor(lst, c);
+}
 bool list_delete_at_cursor(struct list *lst)
 {
     struct node *cursor = lst->cursor;

@@ -6,8 +6,10 @@
 #include "./tokenize.h"
 enum State { NORMAL, IN_QUOTE };
 
-enum State state = NORMAL;
+
 /*** TOKENIZER ***/
+
+static const char *DELIMS = " \t\r\n";
 
 void add_token(struct token_list *list, struct token t) {
     if(list->size >= list->capacity) {
@@ -24,9 +26,11 @@ void add_token(struct token_list *list, struct token t) {
 
 void free_tokens(struct token_list *list) {
     for(int i = 0; i < list->size; i++ ) {
+        printf("Freeing: %s\r\n", list->tokens[i]);
         free(list->tokens[i].value);
     }
     free(list->tokens);
+    free(list);
 }
 
 
@@ -47,86 +51,80 @@ void init_token_list(struct token_list *tl)
     tl->size = 0;
 }
 
-struct token_list *tokenize(struct list *line) {//, size_t size) {
-    // TODO: implement quotation marks.
-    long init_size = 4;
-    //struct token_list *tl = init_token_list;
+void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize)
+{
+    if(strlen(buf) == 0) {
+        return;
+    }
+    struct token t;
+    fflush(stdout);
+    t.value = strdup(buf);
+    memset(buf, 0, bufsize);
+    add_token(tl, t);
 
-    printf("Hello\r\n");
+}
+
+struct token_list *tokenize(struct list *line) {//, size_t size) {
+    enum State state = NORMAL;
+    long init_size = 4;
+
     struct token_list *tl = malloc(sizeof(struct token_list));
     init_token_list(tl);
     char buf[32];
     buf[0] = '\0';
-    int j = 0;
-    struct list *ol = line;
+    int i = 0;
     struct node *cursor = line->HEAD;
 
-    // if at dummy node (should always be the case)
     if(cursor->c == '\0' && cursor->next != NULL) {
         cursor = cursor->next;
     }
-    do {
-        // if " hit, go into string state, and create a single token until " is reached
-        char c = cursor->c;
-        if(state == NORMAL) {
-            if(c != ' ') {
-                buf[j] = c;
-                buf[j+1] = '\0';
-                j++;
-            }
-            // delim
-            if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
-                printf("%d\r\n", strlen(buf));
-                if(strlen(buf) == 0) {
-                    continue;
-                }
-                struct token t;
-                fflush(stdout);
-                t.value = strdup(buf);
-                memset(buf, 0, sizeof(buf));
-                j = 0;
-                add_token(tl, t);
-                cursor = cursor->next;
 
-                // enter delim state
-                while(cursor != NULL && cursor->c == ' ' && cursor->next != NULL) {
+    while(cursor != NULL ) {
+        char c = cursor->c;
+        if (state == NORMAL) {
+            if(strchr(DELIMS, c)) {
+                add_token_from_buff(tl, buf, sizeof(buf));
+                i = 0;
+                // skip over rest of delims
+                while(cursor != NULL && strchr(DELIMS, c)) {
                     cursor = cursor->next;
-                    c = cursor->c;
+                    if(cursor != NULL) {
+                        c = cursor->c;
+                    }
                 }
-                continue;
-            }
-            if(c == '"') {
+            } else if (c == '"') {
                 state = IN_QUOTE;
-                j = 0;
-            }
-            fflush(stdout);
-            cursor = cursor->next;
-            if(c == '\r') break;
-        } else {
-            printf("%c\r\n", c);
-            fflush(stdout);
-            if(c == '"') {
-                state = NORMAL;
-                struct token t;
-                fflush(stdout);
-                t.value = strdup(buf);
-                memset(buf, 0, sizeof(buf));
-                j = 0;
-                add_token(tl, t);
                 cursor = cursor->next;
-                j++;
-                continue;
             } else {
-                buf[j] = c;
-                buf[j+1] = '\0';
-                j++;
+                buf[i++] = c;
+                buf[i] = '\0';
+                cursor = cursor->next;
+            }
+        } else if (state == IN_QUOTE) {
+            if (c == '"') {
+                state = NORMAL;
+                add_token_from_buff(tl, buf, sizeof(buf));
+                if (cursor->next != NULL) {
+                    cursor = cursor->next;
+                }
+                while(cursor != NULL && strchr(DELIMS, c)) {
+                    cursor = cursor->next;
+                    if(cursor != NULL) {
+                        c = cursor->c;
+                    }
+                }
+                i = 0;
+            } else {
+                buf[i++] = c;
+                buf[i+1] = '\0';
                 cursor = cursor->next;
             }
         }
-    } while (cursor != NULL && cursor->c != '\0');
+    }
+
     for (int i = 0; i < tl->size; i++) {
         printf("Token %d: %s\r\n", i, tl->tokens[i].value);
     }
-    free_list(ol);
+    free_list(line);
     return tl;
 }

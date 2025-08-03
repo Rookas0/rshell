@@ -10,5 +10,6 @@ struct token_list {
     int capacity;
 };
 void add_token(struct token_list *list, struct token t);
+void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize);
 void free_tokens(struct token_list *list);
 struct token_list *tokenize(struct list *line);
