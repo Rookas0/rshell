@@ -59,6 +59,10 @@ struct token_list tokenize(struct list *line) {//, size_t size) {
                 j++;
             }
             if(c == ' ' || c == '\r' || c == '\0' || cursor->next == NULL) {
+                printf("%d\r\n", strlen(buf));
+                if(strlen(buf) == 0) {
+                    continue;
+                }
                 struct token t;
                 fflush(stdout);
                 t.value = strdup(buf);
