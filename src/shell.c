@@ -15,32 +15,16 @@
 #include "./readline/readline.h"
 #include "./exec/exec.h"
 #include "./exec/builtins/builtins.h"
+#include "./parser/parser.h"
 
-
-int handle_tokens(struct token_list *tl) {
-    char * cmd = NULL;
-    cmd = tl->tokens[0].value;
-    if(strcmp(cmd, "cd") == 0) {
-        cd(tl->tokens[1].value);
-        //printf("built-ins\r\n");
-    } else if(strcmp(cmd, "exit") == 0) {
-        exec_exit(tl);
-        printf("Why are we here...\r\n");
-    }
-    else {
-        printf("Exec else\r\n");
-        exec_cmd(tl);
-    }
-    return 0;
-}
-
-
-void intHandler(int sig) { 
+void intHandler(int sig)
+{
     //write(STDOUT_FILENO, "\r\n> ", 3);
     write(STDOUT_FILENO, "\r\n> ", 4);
 }
 
-void seg_handler(int sig) {
+void seg_handler(int sig)
+{
     disable_raw_mode();
     printf("\nseg fault\n");
     exit(1);
@@ -48,7 +32,7 @@ void seg_handler(int sig) {
 
 int main(void)//int argc, char *argv[])
 {
-    enable_raw_mode();
+    //atexit(disable_raw_mode);
     char *line = NULL;
     size_t size = 0;
     ssize_t nread;
@@ -56,13 +40,22 @@ int main(void)//int argc, char *argv[])
     struct token_list *tl;
     signal(SIGSEGV, seg_handler);
     signal(SIGINT, intHandler);
-    for(;;) {
+
+    for (;;) {
         fflush(stdout);
+
+        enable_raw_mode();
         struct list *line = readline("> ");
+        disable_raw_mode();
+
         tl = tokenize(line); //, size);
-        printf("After tokenize\r\n");
-        handle_tokens(tl);
-        free_tokens(tl);
+        //printf("After tokenize\r\n");         // debug
+        struct ot_node *ot = parse(tl);
+        exec_tree(ot);
+        free_operator_tree(ot); 
+        //handle_tokens(tl);
+        //free_tokens(tl);
     }
+
     return EXIT_SUCCESS;
 }

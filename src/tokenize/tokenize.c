@@ -71,9 +71,14 @@ void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum 
  * produces an array of tokens
  * These tokens have a string and a token type of word, operator, or string.
  * Maybe more types will be added later.
+ * TODO Would prefer this to be flattened a bit
  */
 
-
+int get_token_operator_type(const char* buf) {
+    if(strcmp(buf, "|") == 0) {
+        return TOK_PIPE;
+    }
+}
 struct token_list *tokenize(struct list *line) {//, size_t size) {
     enum state state = NORMAL;
     long init_size = 4;
@@ -93,7 +98,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
         char c = cursor->c;
         if (state == NORMAL) {
             if(strchr(DELIMS, c)) {
-                add_token_from_buff(tl, buf, sizeof(buf), WORD);
+                add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
                 i = 0;
                 // skip over rest of delims
                 while(cursor != NULL && strchr(DELIMS, c)) {
@@ -103,7 +108,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
                     }
                 }
             } else if (strchr(OPERATORS, c)) {
-                add_token_from_buff(tl, buf, sizeof(buf), WORD);
+                add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
                 i = 0;
                 buf[i++] = c;
                 if (cursor->next != NULL && cursor->next->c == c) {
@@ -114,7 +119,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
                     cursor = cursor-> next;
                 }
                 buf[i] = '\0';
-                add_token_from_buff(tl, buf, sizeof(buf), OPERATOR);
+                add_token_from_buff(tl, buf, sizeof(buf), get_token_operator_type(buf));
                 i = 0;
             }else if (c == '"') {
                 state = IN_QUOTE;
@@ -126,7 +131,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
             }
         } else if (state == IN_QUOTE) {
             if (c == '"') {
-                add_token_from_buff(tl, buf, sizeof(buf), STRING);
+                add_token_from_buff(tl, buf, sizeof(buf), TOK_STRING);
                 state = NORMAL;
                 if (cursor->next != NULL) {
                     cursor = cursor->next;

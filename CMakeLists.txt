@@ -9,7 +9,8 @@ include_directories(
     src/tokenize
     src/readline
     src/exec
-    src/exec/builtins)
+    src/exec/builtins
+    src/parser)
 
 set(SOURCES
     src/shell.c
@@ -18,6 +19,7 @@ set(SOURCES
     src/tokenize/tokenize.c
     src/readline/readline.c
     src/exec/exec.c
-    src/exec/builtins/builtins.c)
+    src/exec/builtins/builtins.c
+    src/parser/parser.c)
 
 add_executable(rshell ${SOURCES})
