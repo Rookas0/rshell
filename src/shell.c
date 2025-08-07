@@ -49,6 +49,9 @@ int main(void)//int argc, char *argv[])
         disable_raw_mode();
 
         tl = tokenize(line); //, size);
+        if(tl->size == 0) {
+            continue;
+        }
         //printf("After tokenize\r\n");         // debug
         struct ot_node *ot = parse(tl);
         exec_tree(ot);
