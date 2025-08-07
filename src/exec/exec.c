@@ -16,7 +16,7 @@ void exec_tree(struct ot_node *node)
 {
     int pipefd[2];
     pid_t cpid1, cpid2;
-
+    
     if(node->type == PIPE) {
         if(pipe(pipefd) == -1) {
             // pipe error

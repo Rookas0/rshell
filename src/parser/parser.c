@@ -99,29 +99,17 @@ struct ot_node* parse_cmd(struct token_stream *ts)
     struct token *tk = peek(ts);
     struct command *cmd = init_cmd(4);
 
-    if(tk->type != TOK_WORD) return NULL;
-
+    if(tk->type != TOK_WORD && tk->type != TOK_STRING) return NULL;
     while(tk != NULL && (tk->type == TOK_WORD || tk->type == TOK_STRING)) {
-        printf("adding to cmd\r\n");
         add_to_cmd(cmd, strdup(tk->value));
         advance(ts);
         tk = peek(ts);
     }
     add_to_cmd(cmd, NULL);
 
-    // debug print cmd contents
-    /*
-    printf("debug print\r\n");
-    for (int i = 0; i < cmd->argc; i++) {
-        printf("%s", cmd->argv[i]);
-        printf("\r\n");
-    }
-    *///
-
     struct ot_node* node = malloc(sizeof(struct ot_node));
     node->type = COMMAND;
     node->cmd = cmd;
-
     return node;
 }
 

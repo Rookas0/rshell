@@ -28,7 +28,6 @@ void add_token(struct token_list *list, struct token t) {
 
 void free_tokens(struct token_list *list) {
     for(int i = 0; i < list->size; i++ ) {
-        printf("Freeing: %s\r\n", list->tokens[i]);
         free(list->tokens[i].value);
     }
     free(list->tokens);
