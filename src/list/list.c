@@ -1,4 +1,5 @@
 #include "list.h"
+#include <stdio.h>
 
 struct list *create_list(void) {
     struct list *my_list = malloc(sizeof(struct list));
@@ -53,6 +54,9 @@ bool list_insert_after_cursor(struct list *lst, char c)
         new_node->prev = cursor;
         new_node->next = cursor->next;
         cursor->next = new_node;
+        if (new_node->next != NULL) {
+            new_node->next->prev = new_node;
+        }
         lst->cursor = new_node;
 
         return true;
@@ -67,9 +71,10 @@ bool list_append_char(struct list *lst, char c)
     while(cursor != NULL && cursor->next != NULL) {
         cursor = cursor->next;
     }
-
+    lst->cursor = cursor;
     list_insert_after_cursor(lst, c);
 }
+
 bool list_delete_at_cursor(struct list *lst)
 {
     struct node *cursor = lst->cursor;
