@@ -5,6 +5,10 @@ Current features
 * Quotes for multi-word tokens
 * Pipe chaining implemented via recursive descent
 
+Compatability
+* Not good.
+* Uses hardcoded ANSI escape sequences for the line-reading functionality because I wanted to learn how it works. Using ncurses or just readline would have allowed for it to be more portable 
+* 
 Todo
 * At some point need to stop expecting good input
     * Ex: Unbalanced quotes, pipes
