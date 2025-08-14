@@ -1,26 +1,29 @@
 /*** termios ***/ 
 #define _GNU_SOURCE
+#include <stdbool.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <stdio.h>
 #include <unistd.h>
 
 #include "term.h"
-
 struct termios orig_termios;
+static bool in_raw_mode = false;
 
 /*
 *  Saves original termios attributes in orig_termios.
  * A little sketchy because if enable_raw_mdde gets called twice,
  * This will overwrite the original with the raw mode attributes.
  */
+
 void enable_raw_mode(void) {
+    if(in_raw_mode) return;
+
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
         //printf("Enabling raw mode\r\n");
         perror("tcgetattr");
         exit(EXIT_FAILURE);
     }
-
     struct termios raw = orig_termios;
 
 
@@ -31,6 +34,7 @@ void enable_raw_mode(void) {
         perror("tcsetattr");
         exit(EXIT_FAILURE);
     }
+    in_raw_mode = true;
 }
 
 /*
@@ -41,5 +45,6 @@ void disable_raw_mode(void) {
     if(isatty(STDIN_FILENO) && tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
         perror("tcsetattr");
     }
+    in_raw_mode = false;
 }
 
