@@ -19,24 +19,26 @@
 
 void intHandler(int sig)
 {
-    //write(STDOUT_FILENO, "\r\n> ", 3);
+    // On interupt( Ctrl C) reprint prompt without exiting
     write(STDOUT_FILENO, "\r\n> ", 4);
 }
 
 void seg_handler(int sig)
 {
+    // On segfault disable raw mode before exiting
     disable_raw_mode();
     printf("\nseg fault\n");
     exit(1);
 }
 
-int main(void)//int argc, char *argv[])
+int main(void)
 {
-    //atexit(disable_raw_mode);
+    // Ensure raw mode is disabled on program exit
+    atexit(disable_raw_mode);
+
     char *line = NULL;
     size_t size = 0;
     ssize_t nread;
-    //ssize_t nread;
     struct token_list *tl;
     signal(SIGSEGV, seg_handler);
     signal(SIGINT, intHandler);
@@ -44,20 +46,22 @@ int main(void)//int argc, char *argv[])
     for (;;) {
         fflush(stdout);
 
+        // Raw mode for input, not for running commands.
         enable_raw_mode();
         struct list *line = readline("> ");
         disable_raw_mode();
 
-        tl = tokenize(line); //, size);
+        tl = tokenize(line);
         if(tl->size == 0) {
             continue;
         }
-        //printf("After tokenize\r\n");         // debug
+
+        // After making tree from tokens, tokens are no longer needed
         struct ot_node *ot = parse(tl);
+        free_token_list(tl);
+
         exec_tree(ot);
         free_operator_tree(ot); 
-        //handle_tokens(tl);
-        //free_tokens(tl);
     }
 
     return EXIT_SUCCESS;

@@ -26,7 +26,7 @@ void add_token(struct token_list *list, struct token t) {
     }
 }
 
-void free_tokens(struct token_list *list) {
+void free_token_list(struct token_list *list) {
     for(int i = 0; i < list->size; i++ ) {
         free(list->tokens[i].value);
     }
@@ -65,9 +65,10 @@ void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum 
     add_token(tl, t);
 
 }
+
 /*
  * Given a linked list of text, deliminated by whitespace,
- * produces an array of tokens
+ * produce an array of tokens
  * These tokens have a string and a token type of word, operator, or string.
  * Maybe more types will be added later.
  * TODO Would prefer this to be flattened a bit
@@ -99,6 +100,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
             if(strchr(DELIMS, c)) {
                 add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
                 i = 0;
+
                 // skip over rest of delims
                 while(cursor != NULL && strchr(DELIMS, c)) {
                     cursor = cursor->next;
@@ -107,9 +109,13 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
                     }
                 }
             } else if (strchr(OPERATORS, c)) {
+                // Consume current buffer to token list
+                // to clear buffer for token
                 add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
                 i = 0;
                 buf[i++] = c;
+
+                // Handle operators && ||.
                 if (cursor->next != NULL && cursor->next->c == c) {
                     buf[i++] = c; 
                     cursor = cursor-> next;
@@ -117,10 +123,11 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
                 if (cursor->next != NULL) {
                     cursor = cursor-> next;
                 }
+
                 buf[i] = '\0';
                 add_token_from_buff(tl, buf, sizeof(buf), get_token_operator_type(buf));
                 i = 0;
-            }else if (c == '"') {
+            } else if (c == '"') {
                 state = IN_QUOTE;
                 cursor = cursor->next;
             } else {
@@ -132,13 +139,16 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
             if (c == '"') {
                 add_token_from_buff(tl, buf, sizeof(buf), TOK_STRING);
                 state = NORMAL;
+
                 if (cursor->next != NULL) {
                     cursor = cursor->next;
                     c = cursor->c;
                 }
+
                 while(cursor != NULL && strchr(DELIMS, cursor->c)) {
                     cursor = cursor->next;
                 }
+
                 i = 0;
             } else {
                 buf[i++] = c;
@@ -148,6 +158,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
         }
     }
 
+    // Debug print
     for (int i = 0; i < tl->size; i++) {
         printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
     }

@@ -11,13 +11,22 @@ void print_prompt(struct list *lst, char * prompt) {
     if(prompt == NULL) {
         prompt = "> ";
     }
+
+    // Move cursor to beginning of line to print prompt
     write(STDOUT_FILENO, "\r", 1);
     write(STDOUT_FILENO, prompt, strlen(prompt));
+
+    // After prompt, print the stored line.
     while(n != NULL) {
         fflush(stdout);
         write(STDOUT_FILENO, &n->c, 1);
         n = n->next;
     }
+
+    /*
+     * Move cursor to position on line.
+     * If posx is 0,
+     */
     char buf[16];
     if(line_info.posx != 0) {
         sprintf(buf, "\r\x1b[%dC", line_info.posx + (int) strlen(prompt));

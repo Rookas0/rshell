@@ -17,7 +17,6 @@ struct command* init_cmd(int capac)
 
 void free_operator_tree(struct ot_node *node)
 {
-    // if node child, call func on node child.
     pid_t cpid;
     if(node->type == PIPE) {
 
@@ -40,8 +39,6 @@ void free_operator_tree(struct ot_node *node)
 void add_to_cmd(struct command *cmd, char *arg)
 {
     if(cmd->argc >= cmd->capacity) {
-        //printf("argc: %d, capac: %d\r\n", cmd->argc, cmd->capacity);
-        //printf("reallocating....\r\n");
         cmd->capacity = cmd->capacity ? cmd->capacity * 2 : 4;
         cmd->argv = realloc(cmd->argv, sizeof(char*) * cmd->capacity);
     }
@@ -51,16 +48,9 @@ void add_to_cmd(struct command *cmd, char *arg)
     }
 }
 
-/*
- * for int i = 0 i < tl->size; i++ 
- *     if token == pipe
- *         read up until token and concat into cmd argv
- *         read after pipe until EOL or another pipe reached. store this into cmd argv
- */
 struct token* peek(struct token_stream *ts)
 {
     if(ts->pos < ts->list->size) {
-        //printf("returning in peek\r\n"); //debug
         return &ts->list->tokens[ts->pos];
     }
 
@@ -73,6 +63,20 @@ void advance(struct token_stream *ts)
         ts->pos++; 
     }
 }
+
+/* ====================== Recursive Descent Parser ====================== */
+/* 
+ * Start at item with lowest precedence
+ * Lowest precedence items call items of higher precedence
+ * This ensures more tightly bound operators are handled first
+ * in the future when more are added.
+ * Ex: ls -ali | grep foo | wc -l
+ *     parser reads first token, ls
+ *     starts in parse_pipe, and calls parse_cmd
+ *     parse_cmd consumes the command, then returns
+ *     parse_pipe loops, calling parse_cmd until all pipes are handled
+ *
+ * ====================================================================== */
 
 struct ot_node* parse_pipe(struct token_stream *ts)
 {
@@ -115,14 +119,14 @@ struct ot_node* parse_cmd(struct token_stream *ts)
 
 struct ot_node* parse(struct token_list *tl)
 {   
-    // read until end of list or operator
-    //  when reachd, add all read tokens into a command struct
     long total_size = 0;
     struct token_stream ts;
+
     ts.pos = 0;
     ts.list = tl;
+
+    // call lowest precedence. in the future this call will be changed
     struct ot_node *node = parse_pipe(&ts);
-    free_tokens(tl);
 
     return node;
 }
