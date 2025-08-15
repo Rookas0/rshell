@@ -19,12 +19,12 @@ void exec_pipe(struct ot_node *node)
     pid_t cpid1, cpid2;
 
     if(pipe(pipefd) == -1) {
-        // pipe error
+        perror("pipe failed");
     }
 
     cpid1 = fork();
     if(cpid1 == -1) {
-        // fork error
+        perror("fork failed");
     }
 
     if(cpid1 == 0) {

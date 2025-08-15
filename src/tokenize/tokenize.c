@@ -6,8 +6,6 @@
 #include "./tokenize.h"
 #include "../list/list.h"
 
-
-
 /*** TOKENIZER ***/
 
 static const char *DELIMS = " \t\r\n";
@@ -159,9 +157,11 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
     }
 
     // Debug print
+    /*
     for (int i = 0; i < tl->size; i++) {
         printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
     }
+    */
     free_list(line);
     return tl;
 }
