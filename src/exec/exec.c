@@ -97,7 +97,21 @@ void exec_tree(struct ot_node *node)
         cpid = fork();
         if(cpid == 0) {
             //disable_raw_mode();
-            if(execvp(node->cmd->argv[0], node->cmd->argv) == -1) {
+ 
+            // handle redirects
+            struct command *cmd = node->cmd; 
+            
+            if(cmd->out_file) {
+                if (!freopen(cmd->out_file, "w", stdout)) {
+                    perror(cmd->out_file);
+                }
+            }
+            if(cmd->in_file) {
+                if (!freopen(cmd->in_file, "r", stdin)) {
+                    perror(cmd->in_file);
+                }
+            }
+            if(execvp(cmd->argv[0], cmd->argv) == -1) {
                 //printf("Error executing %s\r\n", node->cmd->argv[0]);
                 exit(1);
             }

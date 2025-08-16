@@ -13,6 +13,8 @@ struct command {
     char **argv;
     int argc;
     int capacity;
+    char *in_file;
+    char *out_file;
 };
 
 struct ot_node {

@@ -76,6 +76,13 @@ int get_token_operator_type(const char* buf) {
     if(strcmp(buf, "|") == 0) {
         return TOK_PIPE;
     }
+    if(strcmp(buf, ">") == 0) {
+        return TOK_REDIR_RIGHT;
+    }
+    if(strcmp(buf, "<") == 0) {
+        return TOK_REDIR_LEFT;
+    }
+    return TOK_OPERATOR;
 }
 struct token_list *tokenize(struct list *line) {//, size_t size) {
     enum state state = NORMAL;
@@ -157,11 +164,9 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
     }
 
     // Debug print
-    /*
     for (int i = 0; i < tl->size; i++) {
         printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
     }
-    */
     free_list(line);
     return tl;
 }

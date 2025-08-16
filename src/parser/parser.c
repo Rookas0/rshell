@@ -10,6 +10,8 @@ struct command* init_cmd(int capac)
 {
     struct command* cmd = malloc(sizeof(struct command));
     cmd->argv = NULL;
+    cmd->out_file = NULL;
+    cmd->in_file = NULL;
     cmd->argc = 0;
     cmd->capacity = 0;
     return cmd;
@@ -27,10 +29,12 @@ void free_operator_tree(struct ot_node *node)
         free_operator_tree(node->children.right_child);
     } else if (node->type == COMMAND) {
         struct command *cmd = node->cmd;
-        for(int i = 0; i < cmd->argc; i++) {
+        for (int i = 0; i < cmd->argc; i++) {
             free(cmd->argv[i]);
         }
         free(cmd->argv);
+        if (cmd->in_file != NULL) free(cmd->in_file);
+        if (cmd->out_file != NULL) free(cmd->out_file);
         free(node->cmd);
     }
     free(node);
@@ -109,11 +113,39 @@ struct ot_node* parse_cmd(struct token_stream *ts)
         advance(ts);
         tk = peek(ts);
     }
+
+    // handle redirection
+    while (tk != NULL && (tk->type == TOK_REDIR_RIGHT || tk->type == TOK_REDIR_LEFT)) {
+        printf("Start loop tk: %s\r\n", tk->value);
+        if (tk != NULL && tk->type == TOK_REDIR_LEFT) {
+            advance(ts);
+            tk = peek(ts);
+            if (tk == NULL) {
+                // error no file given
+            } else {
+                cmd->in_file = strdup(tk->value);
+                advance(ts);
+                tk = peek(ts);
+            }
+        } else if (tk != NULL && tk->type == TOK_REDIR_RIGHT) {
+            advance(ts);
+            tk = peek(ts);
+            if (tk == NULL) {
+                // error no file given
+            } else {
+                cmd->out_file = strdup(tk->value);
+                advance(ts);
+                tk = peek(ts);
+            }
+        }
+    }
+
     add_to_cmd(cmd, NULL);
 
     struct ot_node* node = malloc(sizeof(struct ot_node));
     node->type = COMMAND;
     node->cmd = cmd;
+
     return node;
 }
 

@@ -8,6 +8,8 @@ enum type {
     TOK_WORD,
     TOK_OPERATOR,
     TOK_PIPE,
+    TOK_REDIR_RIGHT,
+    TOK_REDIR_LEFT,
 };
 
 struct token {
