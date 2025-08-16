@@ -23,7 +23,11 @@ cd rshell
 mkdir build && cd build
 cmake ..
 ```
-3. Run rshell!
+3. Compile
+``bash
+make
+```
+4. Run rshell!
 ```bash
 ./rshell
 ```
