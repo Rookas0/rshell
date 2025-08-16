@@ -90,7 +90,7 @@ struct token_list *tokenize(struct list *line) {//, size_t size) {
 
     struct token_list *tl = malloc(sizeof(struct token_list));
     init_token_list(tl);
-    char buf[32];
+    char buf[64];
     buf[0] = '\0';
     int i = 0;
     struct node *cursor = line->HEAD;

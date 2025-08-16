@@ -12,20 +12,16 @@ void print_prompt(struct list *lst, char * prompt) {
         prompt = "> ";
     }
 
-    // Move cursor to beginning of line to print prompt
     write(STDOUT_FILENO, "\r\x1b[?25l", 7);
+
     write(STDOUT_FILENO, prompt, strlen(prompt));
-    // After prompt, print the stored line.
+
     while(n != NULL) {
         fflush(stdout);
         write(STDOUT_FILENO, &n->c, 1);
         n = n->next;
     }
 
-    /*
-     * Move cursor to position on line.
-     * If posx is 0,
-     */
     char buf[16];
     if(line_info.posx != 0) {
         sprintf(buf, "\r\x1b[%dC", line_info.posx + (int) strlen(prompt));
@@ -37,16 +33,19 @@ void print_prompt(struct list *lst, char * prompt) {
 
     write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
+
 int readchar(void) {
     // referenced kilo text editor for handling escape sequence
     char c;
     read(STDIN_FILENO, &c, 1);
 
     // if escape sequence isn't followed by anything, escape key was pressed, so return escape
+    //  otherwise, decode escape sequence into the proper key
     if(c == '\x1b') {
         char seq[3];
         if(read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
         if(read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+
         if(seq[0] == '[') {
             if(seq[1] >= '0' && seq[1] <= '9') {
                 if(read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
@@ -77,7 +76,7 @@ int readchar(void) {
                 case 'F': return END_KEY;
             }
         }
-    return '\x1b';
+        return '\x1b';
     }
     return c;
 }
@@ -117,12 +116,6 @@ void append_enter(struct list *lst) {
 
 void handle_char(struct list *lst, int nc)
 {
-    //struct list *cursor = *cursor_p;
-    // sruct list *lp = malloc 
-    //  TODO: refactor to make list start at a null char node. 
-    //        this will allow cursor to be at start of line before any other nodes.
-    //        when printing, skip when node->c == '\0'
-    //        also implement right arrow and backspace 
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
         insert_char_at_cursor(lst, c);
@@ -141,6 +134,7 @@ void handle_char(struct list *lst, int nc)
     }
 
 }
+
 struct list * readline(char *prompt) {
     char c = '\0';
     struct list *lst = create_list();
