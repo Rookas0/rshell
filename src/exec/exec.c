@@ -11,7 +11,11 @@
 #include "exec.h"
 
 
-//TODO cleanup and split logic
+void exec_exit(struct ot_node *node)
+{
+    free_operator_tree(node);
+    exit(0);
+}
 
 void exec_pipe(struct ot_node *node)
 {
@@ -89,8 +93,8 @@ void exec_tree(struct ot_node *node)
             // 
             //printf("exiting\r\n");
             disable_raw_mode();
-            exit(0);
-            //exec_exit(tl);
+
+            exec_exit(node);
         }
 
         pid_t cpid;
@@ -122,8 +126,3 @@ void exec_tree(struct ot_node *node)
 }
 
 
-void exec_exit(struct token_list *tl)
-{
-    free_token_list(tl); 
-    exit(0);
-}
