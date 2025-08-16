@@ -1,12 +1,34 @@
-I'm writing this shell in C for learning purposes.
+# Rshell
 
-Current features
-* Line editing with left/right arrows and backspace
-* Quotes for multi-word tokens
-* Pipe chaining implemented via recursive descent
-* Input output redirection via > < operators
+## Current features
+1. Line editing with left/right arrows and backspace
+2. Quotes for multi-word tokens
+3. Pipe chaining implemented via recursive descent
+4. Input output redirection using > < operators
+5. cd & exit built-ins
 
-Compatability
+## Building
+
+You'll need:
+   * cmake
+   * a C compiler. I used GCC.
+### Build steps
+1. Clone the repository:
+```bash
+git clone https://github.com/Rookas0/rshell
+cd rshell
+```
+2. Create a build directory and configure
+```bash
+mkdir build && cd build
+cmake ..
+```
+3. Run rshell!
+```bash
+./rshell
+```
+
+## Compatability
 * Not good.
 * Uses hardcoded ANSI escape sequences for the line-reading functionality because I wanted to learn how it works. Using ncurses or just readline would have allowed for it to be more portable 
 
