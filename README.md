@@ -42,8 +42,9 @@ make
 * Add other operators such as && || ;
 * Job management.
 * Signal handling. (Ctrl L to clear screen, Ctrl C to newline)
-* Allow line to be longer than terminal width (wrapping)
-* Allow tokens of arbitrary length (capped buffer right now)
-* More rich line editing
+* better line editor
+    * Allow line to be longer than terminal width (wrapping)
+    * Allow tokens of arbitrary length (capped buffer right now)
     * Tab completion
-    * Shortcuts to start and end of line
+    * Shortcuts to move cursor to start and end of line
+    * general optimizations needed. flickers when run in a VM
