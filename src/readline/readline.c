@@ -13,9 +13,8 @@ void print_prompt(struct list *lst, char * prompt) {
     }
 
     // Move cursor to beginning of line to print prompt
-    write(STDOUT_FILENO, "\r", 1);
+    write(STDOUT_FILENO, "\r\x1b[?25l", 7);
     write(STDOUT_FILENO, prompt, strlen(prompt));
-
     // After prompt, print the stored line.
     while(n != NULL) {
         fflush(stdout);
@@ -36,6 +35,7 @@ void print_prompt(struct list *lst, char * prompt) {
         write(STDOUT_FILENO, buf, strlen(buf));
     }
 
+    write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
 int readchar(void) {
     // referenced kilo text editor for handling escape sequence
