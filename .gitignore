@@ -11,3 +11,5 @@ src/.cache/
 compile_commands.json
 
 .cache/
+
+docs/
