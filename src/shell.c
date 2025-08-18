@@ -21,6 +21,7 @@ void intHandler(int sig)
 {
     // On interupt( Ctrl C) reprint prompt without exiting
     write(STDOUT_FILENO, "\r\n> ", 4);
+    exit(0);
 }
 
 void seg_handler(int sig)

@@ -5,10 +5,60 @@
 #include "../list/list.h"
 #include "./readline.h"
  
-struct line_info line_info;
+struct line line_info;
 
-void print_prompt(struct list *lst, char * prompt) {
-    struct node *n = lst->HEAD;
+static void init_string(struct string *str) {
+    str->capac = 128;
+    str->size = 0;
+    str->s = malloc(sizeof(char) * (str->capac + 1));
+    if(!str->s) {
+        perror("malloc");
+    }
+}
+
+static void append_char(struct string *str, char c) {
+    if(str->size >= str->capac) {
+        str->capac *= 2;
+        char *tmp = realloc(str->s, sizeof(char) * (str->capac + 1));
+        if(!tmp) {
+            perror("realloc");
+            return;
+        }
+    }
+    str->s[str->size++] = c;
+    str->s[str->size] = '\0';
+}
+
+static void insert_char(struct line *ln, char c) {
+    struct string *str = &ln->str;
+    int pos = ln->posx;
+
+    if(str->size >= str->capac) {
+        str->capac *= 2;
+        char *tmp = realloc(str->s, sizeof(char) * (str->capac + 1));
+        if(!tmp) {
+            perror("realloc");
+            return;
+        }
+    }
+    
+    if(str->size == ln->posx) {
+        str->s[pos] = c;
+        str->s[str->size++] = c;
+        ln->posx++;
+        return;
+    }
+    //shift
+    for(int i = str->size - 1; i > pos; i--) {
+        str->s[i+1] = str->s[i];
+    }
+
+    str->s[pos] = c;
+    str->s[str->size++] = c;
+    // 
+}
+
+static void print_prompt(struct line ln, char * prompt) {
     if(prompt == NULL) {
         prompt = "> ";
     }
@@ -17,11 +67,7 @@ void print_prompt(struct list *lst, char * prompt) {
 
     write(STDOUT_FILENO, prompt, strlen(prompt));
 
-    while(n != NULL) {
-        fflush(stdout);
-        write(STDOUT_FILENO, &n->c, 1);
-        n = n->next;
-    }
+    write(STDOUT_FILENO, ln.str.s, strlen(ln.str.s));
 
     char buf[16];
     if(line_info.posx != 0) {
@@ -119,12 +165,13 @@ void append_enter(struct list *lst) {
     list_append_char(lst, c);
 }
 
-void handle_char(struct list *lst, int nc)
+void handle_char(struct line *ln, int nc)
 {
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
-        insert_char_at_cursor(lst, c);
+        insert_char(ln, c);
     }
+    /*
     if(nc == ARROW_LEFT) {
         move_cursor_left(lst);
     }
@@ -137,19 +184,22 @@ void handle_char(struct list *lst, int nc)
     if(nc == 0x0A) {
         append_enter(lst);
     }
-
+    */
 }
 
 struct list * readline(char *prompt) {
     char c = '\0';
     struct list *lst = create_list();
+    struct line ln;
+    ln.posx = 0;
+    init_string(&ln.str); 
     line_info.posx = 0;
     for(;;) {
-        print_prompt(lst, prompt);
+        print_prompt(ln, prompt);
         fflush(stdout);
         //read(STDIN_FILENO, &c, 1);
         int nc = readchar();
-        handle_char(lst, nc);
+        handle_char(&ln, nc);
         // clear line and rewrite
         write(STDOUT_FILENO, "\r\x1b[K", 4);
         //struct list *tmp = head;
@@ -161,7 +211,7 @@ struct list * readline(char *prompt) {
             break;
         }
     }
-    print_prompt(lst, prompt);
+    print_prompt(ln, prompt);
     write(STDOUT_FILENO, "\r\n", 2);
     line_info.posx = 0;
     
