@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -77,6 +78,10 @@ int readchar(void) {
             }
         }
         return '\x1b';
+    }
+    else if(c == 0x03) {
+        raise(SIGINT);
+        return c;
     }
     return c;
 }
