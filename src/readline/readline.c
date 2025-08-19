@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "../list/list.h"
 #include "./readline.h"
 
  
@@ -134,9 +133,9 @@ static void insert_char(struct line *ln, char c)
         ln->str.s[i+1] = ln->str.s[i];
     }
 
-    ln->str.s[ln->posx] = c;
     ln->str.size++;
-    ln->posx++;
+    ln->str.s[ln->posx++] = c;
+    ln->str.s[ln->str.size] = '\0';
 }
 
 static void delete_char(struct line *ln)
@@ -188,6 +187,10 @@ static void handle_char(struct line *ln, int nc)
         move_cursor_left(ln);
     } else if(nc == ARROW_RIGHT) {
         move_cursor_right(ln);
+    } else if(nc == HOME_KEY) {
+        ln->posx = 0;
+    } else if(nc == END_KEY) {
+        ln->posx = ln->str.size;
     }
 }
 
