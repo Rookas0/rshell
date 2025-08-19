@@ -4,98 +4,49 @@
 #include <unistd.h>
 #include "../list/list.h"
 #include "./readline.h"
+
  
 struct line line_info;
 
-static void init_string(struct string *str) {
+static void init_string(struct string *str)
+{
     str->capac = 128;
     str->size = 0;
+
     str->s = malloc(sizeof(char) * (str->capac + 1));
-    if(!str->s) {
+    if (!str->s) {
         perror("malloc");
     }
     str->s[0] = '\0';
 }
 
-static void append_char(struct string *str, char c) {
-    if(str->size >= str->capac) {
-        str->capac *= 2;
-        char *tmp = realloc(str->s, sizeof(char) * (str->capac + 1));
-        if(!tmp) {
-            perror("realloc");
-            return;
-        }
-    }
-    str->s[str->size++] = c;
-    str->s[str->size] = '\0';
-}
-
-static void insert_char(struct line *ln, char c)
+static struct line * init_line()
 {
+    struct line *ln = malloc(sizeof(struct line));
+    ln->posx = 0;
+    init_string(&ln->str); 
 
-    if(ln->str.size >= ln->str.capac) {
-        ln->str.capac *= 2;
-        char *tmp = realloc(ln->str.s, sizeof(char) * (ln->str.capac + 1));
-        if(!tmp) {
-            perror("realloc");
-            return;
-        }
-        ln->str.s = tmp;
-    }
-    
-    // at end of line
-    /*
-    if(ln->str.size == ln->posx) {
-        ln->str.s[ln->str.size++] = c;
-        ln->posx++;
-        return;
-    }
-    */
-
-    //shift
-    for(int i = ln->str.size; i >= ln->posx; i--) {
-        ln->str.s[i+1] = ln->str.s[i];
-    }
-
-    ln->str.s[ln->posx] = c;
-    ln->str.size++;
-    ln->posx++;
+    return ln;
 }
 
-static void delete_char(struct line *ln)
+void free_line(struct line *ln)
 {
-    if(ln->posx <= 0) {
-        return;
-    }
+    if(ln == NULL) return;
 
-
-    // at end of line
-    if(ln->str.size == ln->posx) {
-        ln->str.s[ln->posx-1] = '\0';
-        ln->posx--;
-        ln->str.size--;
-        return;
-    }
-
-    //shift
-    for(int i = ln->posx - 1; i <= ln->str.size - 1; i++) {
-        ln->str.s[i] = ln->str.s[i+1];
-    }
-    ln->posx--;
-    ln->str.size--;
-    ln->str.s[ln->str.size] = '\0';
+    free(ln->str.s);
+    free(ln);
 }
+
+
 
 static void print_prompt(struct line *ln, char *prompt)
 {
-    if(prompt == NULL) {
+    if (prompt == NULL) {
         prompt = "> ";
     }
 
     write(STDOUT_FILENO, "\r\x1b[?25l", 7);
-
     write(STDOUT_FILENO, prompt, strlen(prompt));
-
     write(STDOUT_FILENO, ln->str.s, strlen(ln->str.s));
 
     char buf[16];
@@ -110,8 +61,11 @@ static void print_prompt(struct line *ln, char *prompt)
     write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
 
-int readchar(void) {
+static int readchar(void)
+{
     // referenced kilo text editor for handling escape sequence
+    // Copyright (c) 2016, Salvatore Sanfilippo <antirez at gmail dot com>
+    // BSD 2-Clause "Simplified" License
     char c;
     read(STDIN_FILENO, &c, 1);
 
@@ -161,107 +115,107 @@ int readchar(void) {
     return c;
 }
 
-void insert_char_at_cursor(struct list *lst, char c)
+
+static void insert_char(struct line *ln, char c)
 {
-    if(list_insert_after_cursor(lst, c)) {
-        line_info.posx++;
+
+    if (ln->str.size >= ln->str.capac) {
+        ln->str.capac *= 2;
+        char *tmp = realloc(ln->str.s, sizeof(char) * (ln->str.capac + 1));
+        if (!tmp) {
+            perror("realloc");
+            return;
+        }
+        ln->str.s = tmp;
     }
+    
+    //shift
+    for (int i = ln->str.size; i >= ln->posx; i--) {
+        ln->str.s[i+1] = ln->str.s[i];
+    }
+
+    ln->str.s[ln->posx] = c;
+    ln->str.size++;
+    ln->posx++;
 }
 
-void move_cursor_left(struct line *ln)
+static void delete_char(struct line *ln)
+{
+    if(ln->posx <= 0) {
+        return;
+    }
+
+
+    // at end of line
+    if(ln->str.size == ln->posx) {
+        ln->str.s[ln->posx-1] = '\0';
+        ln->posx--;
+        ln->str.size--;
+        return;
+    }
+
+    //shift
+    for(int i = ln->posx - 1; i <= ln->str.size - 1; i++) {
+        ln->str.s[i] = ln->str.s[i+1];
+    }
+    ln->posx--;
+    ln->str.size--;
+    ln->str.s[ln->str.size] = '\0';
+}
+
+static void move_cursor_left(struct line *ln)
 {
     if(ln->posx > 0) {
         ln->posx--;
     }
 }
 
-void move_cursor_right(struct line *ln)
+static void move_cursor_right(struct line *ln)
 {
     if(ln->posx < ln->str.size) {
         ln->posx++;
     }
 }
 
-void delete_at_cursor(struct list *lst) 
-{
-    if(list_delete_at_cursor(lst)) {
-        line_info.posx--;
-    }
-}
-
-void append_enter(struct list *lst) {
-    char c = '\r';
-    list_append_char(lst, c);
-}
-
-void handle_char(struct line *ln, int nc)
+static void handle_char(struct line *ln, int nc)
 {
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
         insert_char(ln, c);
-    }
-    if(nc == ARROW_LEFT) {
+    } else if(nc == 0x7F) {
+        delete_char(ln);
+    } else if(nc == ARROW_LEFT) {
         move_cursor_left(ln);
-    }
-
-    if(nc == ARROW_RIGHT) {
+    } else if(nc == ARROW_RIGHT) {
         move_cursor_right(ln);
     }
-    if(nc == 0x7F) {
-        delete_char(ln);
-    }
-    /*
-    if(nc == 0x0A) {
-        append_enter(lst);
-    }
-    */
 }
-static struct line * init_line()
+
+
+struct line * readline(char *prompt)
 {
-    struct line *ln = malloc(sizeof(struct line));
-    ln->posx = 0;
-    init_string(&ln->str); 
-    return ln;
-}
-
-void free_line(struct line *ln)
-{
-    if(ln == NULL) return;
-
-    free(ln->str.s);
-    free(ln);
-}
-
-struct line * readline(char *prompt) {
-    char c = '\0';
     struct line *ln = init_line();
     for(;;) {
         print_prompt(ln, prompt);
         fflush(stdout);
-        //read(STDIN_FILENO, &c, 1);
-        int nc = readchar();
-        handle_char(ln, nc);
-        // clear line and rewrite
-        write(STDOUT_FILENO, "\r\x1b[K", 4);
-        //struct list *tmp = head;
-        c = (char) nc;
 
-        if(c == '\r' || c == '\n') {
-            //append_enter(lst);
-            //buf[i] = '\0';
+        int nc = readchar();
+
+        if(nc == '\r' || nc == '\n') {
             break;
         }
+
+        handle_char(ln, nc);
+
+        // clear line and rewrite
+        write(STDOUT_FILENO, "\r\x1b[K", 4);
+
     }
+
     print_prompt(ln, prompt);
     write(STDOUT_FILENO, "\r\n", 2);
     ln->posx = 0;
-    
-    /*
-    while(cursor->next != NULL) {
-        write(STDOUT_FILENO, &cursor->c, 1);
-        cursor = cursor->next;
-    } 
-    */
+
     return ln;
 
 }
