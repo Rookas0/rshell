@@ -14,6 +14,7 @@ static void init_string(struct string *str) {
     if(!str->s) {
         perror("malloc");
     }
+    str->s[0] = '\0';
 }
 
 static void append_char(struct string *str, char c) {
@@ -43,14 +44,16 @@ static void insert_char(struct line *ln, char c)
     }
     
     // at end of line
+    /*
     if(ln->str.size == ln->posx) {
         ln->str.s[ln->str.size++] = c;
         ln->posx++;
         return;
     }
+    */
 
     //shift
-    for(int i = ln->str.size - 1; i >= ln->posx; i--) {
+    for(int i = ln->str.size; i >= ln->posx; i--) {
         ln->str.s[i+1] = ln->str.s[i];
     }
 
