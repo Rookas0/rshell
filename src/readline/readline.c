@@ -29,7 +29,8 @@ static void append_char(struct string *str, char c) {
     str->s[str->size] = '\0';
 }
 
-static void insert_char(struct line *ln, char c) {
+static void insert_char(struct line *ln, char c)
+{
     struct string *str = &ln->str;
     int pos = ln->posx;
 
@@ -43,25 +44,47 @@ static void insert_char(struct line *ln, char c) {
     }
     
     if(str->size == ln->posx) {
-        str->s[pos] = c;
         str->s[str->size++] = c;
         ln->posx++;
         return;
     }
+
     //shift
-    printf("Shifting\r\n");
     for(int i = str->size - 1; i >= pos; i--) {
         str->s[i+1] = str->s[i];
     }
 
     str->s[pos] = c;
-    //str->s[str->size++] = c;
     str->size++;
     ln->posx++;
-    // 
 }
 
-static void print_prompt(struct line ln, char * prompt) {
+static void delete_char(struct line *ln)
+{
+    if(ln->posx <= 0) {
+        return;
+    }
+
+    struct string *str = &ln->str;
+    int pos = ln->posx;
+
+    if(str->size == pos) {
+        str->s[pos-1] = '\0';
+        ln->posx--;
+        ln->str.size--;
+        return;
+    }
+
+    //shift
+    for(int i = pos - 1; i <= str->size - 1; i++) {
+        str->s[i] = str->s[i+1];
+    }
+    ln->posx--;
+    ln->str.size--;
+
+}
+static void print_prompt(struct line ln, char * prompt)
+{
     if(prompt == NULL) {
         prompt = "> ";
     }
@@ -181,10 +204,10 @@ void handle_char(struct line *ln, int nc)
     if(nc == ARROW_RIGHT) {
         move_cursor_right(ln);
     }
-    /*
     if(nc == 0x7F) {
-        delete_at_cursor(lst);
+        delete_char(ln);
     }
+    /*
     if(nc == 0x0A) {
         append_enter(lst);
     }
