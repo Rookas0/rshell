@@ -31,31 +31,31 @@ static void append_char(struct string *str, char c) {
 
 static void insert_char(struct line *ln, char c)
 {
-    struct string *str = &ln->str;
-    int pos = ln->posx;
 
-    if(str->size >= str->capac) {
-        str->capac *= 2;
-        char *tmp = realloc(str->s, sizeof(char) * (str->capac + 1));
+    if(ln->str.size >= ln->str.capac) {
+        ln->str.capac *= 2;
+        char *tmp = realloc(ln->str.s, sizeof(char) * (ln->str.capac + 1));
         if(!tmp) {
             perror("realloc");
             return;
         }
+        ln->str.s = tmp;
     }
     
-    if(str->size == ln->posx) {
-        str->s[str->size++] = c;
+    // at end of line
+    if(ln->str.size == ln->posx) {
+        ln->str.s[ln->str.size++] = c;
         ln->posx++;
         return;
     }
 
     //shift
-    for(int i = str->size - 1; i >= pos; i--) {
-        str->s[i+1] = str->s[i];
+    for(int i = ln->str.size - 1; i >= ln->posx; i--) {
+        ln->str.s[i+1] = ln->str.s[i];
     }
 
-    str->s[pos] = c;
-    str->size++;
+    ln->str.s[ln->posx] = c;
+    ln->str.size++;
     ln->posx++;
 }
 
@@ -65,25 +65,25 @@ static void delete_char(struct line *ln)
         return;
     }
 
-    struct string *str = &ln->str;
-    int pos = ln->posx;
 
-    if(str->size == pos) {
-        str->s[pos-1] = '\0';
+    // at end of line
+    if(ln->str.size == ln->posx) {
+        ln->str.s[ln->posx-1] = '\0';
         ln->posx--;
         ln->str.size--;
         return;
     }
 
     //shift
-    for(int i = pos - 1; i <= str->size - 1; i++) {
-        str->s[i] = str->s[i+1];
+    for(int i = ln->posx - 1; i <= ln->str.size - 1; i++) {
+        ln->str.s[i] = ln->str.s[i+1];
     }
     ln->posx--;
     ln->str.size--;
-
+    ln->str.s[ln->str.size] = '\0';
 }
-static void print_prompt(struct line ln, char * prompt)
+
+static void print_prompt(struct line *ln, char *prompt)
 {
     if(prompt == NULL) {
         prompt = "> ";
@@ -93,11 +93,11 @@ static void print_prompt(struct line ln, char * prompt)
 
     write(STDOUT_FILENO, prompt, strlen(prompt));
 
-    write(STDOUT_FILENO, ln.str.s, strlen(ln.str.s));
+    write(STDOUT_FILENO, ln->str.s, strlen(ln->str.s));
 
     char buf[16];
-    if(ln.posx != 0) {
-        sprintf(buf, "\r\x1b[%dC", ln.posx + (int) strlen(prompt));
+    if(ln->posx != 0) {
+        sprintf(buf, "\r\x1b[%dC", ln->posx + (int) strlen(prompt));
         write(STDOUT_FILENO, buf, strlen(buf));
     } else {
         sprintf(buf, "\r\x1b[%dC", (int) strlen(prompt));
@@ -213,34 +213,45 @@ void handle_char(struct line *ln, int nc)
     }
     */
 }
+static struct line * init_line()
+{
+    struct line *ln = malloc(sizeof(struct line));
+    ln->posx = 0;
+    init_string(&ln->str); 
+    return ln;
+}
 
-struct list * readline(char *prompt) {
+void free_line(struct line *ln)
+{
+    if(ln == NULL) return;
+
+    free(ln->str.s);
+    free(ln);
+}
+
+struct line * readline(char *prompt) {
     char c = '\0';
-    struct list *lst = create_list();
-    struct line ln;
-    ln.posx = 0;
-    init_string(&ln.str); 
-    line_info.posx = 0;
+    struct line *ln = init_line();
     for(;;) {
         print_prompt(ln, prompt);
         fflush(stdout);
         //read(STDIN_FILENO, &c, 1);
         int nc = readchar();
-        handle_char(&ln, nc);
+        handle_char(ln, nc);
         // clear line and rewrite
         write(STDOUT_FILENO, "\r\x1b[K", 4);
         //struct list *tmp = head;
         c = (char) nc;
 
         if(c == '\r' || c == '\n') {
-            append_enter(lst);
+            //append_enter(lst);
             //buf[i] = '\0';
             break;
         }
     }
     print_prompt(ln, prompt);
     write(STDOUT_FILENO, "\r\n", 2);
-    line_info.posx = 0;
+    ln->posx = 0;
     
     /*
     while(cursor->next != NULL) {
@@ -248,5 +259,6 @@ struct list * readline(char *prompt) {
         cursor = cursor->next;
     } 
     */
-    return lst;
+    return ln;
+
 }

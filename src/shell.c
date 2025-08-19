@@ -49,10 +49,11 @@ int main(void)
 
         // Raw mode for input, not for running commands.
         enable_raw_mode();
-        struct list *line = readline("> ");
+        struct line *ln = readline("> ");
         disable_raw_mode();
-
-        tl = tokenize(line);
+        free_line(ln);
+        continue;
+        //tl = tokenize(line);
         if(tl->size == 0) {
             continue;
         }

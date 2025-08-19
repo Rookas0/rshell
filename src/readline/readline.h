@@ -23,4 +23,5 @@ struct line {
     int posx;
 };
 
-struct list * readline(char *prompt);
+struct line * readline(char *prompt);
+void free_line(struct line *ln);
