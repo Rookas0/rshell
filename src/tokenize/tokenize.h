@@ -26,4 +26,4 @@ struct token_list {
 //void add_token(struct token_list *list, struct token t);
 //void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum type type);
 void free_token_list(struct token_list *list);
-struct token_list *tokenize(struct list *line);
+struct token_list *tokenize(char *line);

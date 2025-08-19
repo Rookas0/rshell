@@ -84,7 +84,8 @@ int get_token_operator_type(const char* buf) {
     }
     return TOK_OPERATOR;
 }
-struct token_list *tokenize(struct list *line) {//, size_t size) {
+
+struct token_list *tokenize(char *line) {
     enum state state = NORMAL;
     long init_size = 4;
 
