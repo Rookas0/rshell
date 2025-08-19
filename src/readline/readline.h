@@ -1,5 +1,6 @@
 #pragma once
-#include "../list/list.h"
+
+#include "../util/util.h"
 
 enum shell_key {
     ARROW_LEFT =  1000,
@@ -13,11 +14,6 @@ enum shell_key {
     PAGE_DOWN
 };
 
-struct string {
-    int capac;
-    int size;
-    char *s;
-};
 struct line {
     struct string str;
     int posx;

@@ -1,29 +1,21 @@
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "../util/util.h"
 #include "./readline.h"
 
- 
+#define LINE_INIT_CAPAC 128
 struct line line_info;
 
-static void init_string(struct string *str)
-{
-    str->capac = 128;
-    str->size = 0;
-
-    str->s = malloc(sizeof(char) * (str->capac + 1));
-    if (!str->s) {
-        perror("malloc");
-    }
-    str->s[0] = '\0';
-}
 
 static struct line * init_line()
 {
     struct line *ln = malloc(sizeof(struct line));
     ln->posx = 0;
-    init_string(&ln->str); 
+    init_string(&ln->str, LINE_INIT_CAPAC);
 
     return ln;
 }
@@ -117,25 +109,9 @@ static int readchar(void)
 
 static void insert_char(struct line *ln, char c)
 {
-
-    if (ln->str.size >= ln->str.capac) {
-        ln->str.capac *= 2;
-        char *tmp = realloc(ln->str.s, sizeof(char) * (ln->str.capac + 1));
-        if (!tmp) {
-            perror("realloc");
-            return;
-        }
-        ln->str.s = tmp;
+    if(insert_char_to_str(&ln->str, c, ln->posx)) {
+        ln->posx++;
     }
-    
-    //shift
-    for (int i = ln->str.size; i >= ln->posx; i--) {
-        ln->str.s[i+1] = ln->str.s[i];
-    }
-
-    ln->str.size++;
-    ln->str.s[ln->posx++] = c;
-    ln->str.s[ln->str.size] = '\0';
 }
 
 static void delete_char(struct line *ln)
@@ -220,5 +196,4 @@ struct line * readline(char *prompt)
     ln->posx = 0;
 
     return ln;
-
 }

@@ -94,7 +94,7 @@ struct token_list *tokenize(char *line) {
     char buf[64];
     buf[0] = '\0';
     int i = 0;
-    struct node *cursor = line->HEAD;
+    struct node *cursor = NULL;//line->HEAD;
 
     if(cursor->c == '\0' && cursor->next != NULL) {
         cursor = cursor->next;
@@ -168,6 +168,6 @@ struct token_list *tokenize(char *line) {
     for (int i = 0; i < tl->size; i++) {
         printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
     }
-    free_list(line);
+    //free_list(line);
     return tl;
 }
