@@ -49,12 +49,15 @@ static void insert_char(struct line *ln, char c) {
         return;
     }
     //shift
-    for(int i = str->size - 1; i > pos; i--) {
+    printf("Shifting\r\n");
+    for(int i = str->size - 1; i >= pos; i--) {
         str->s[i+1] = str->s[i];
     }
 
     str->s[pos] = c;
-    str->s[str->size++] = c;
+    //str->s[str->size++] = c;
+    str->size++;
+    ln->posx++;
     // 
 }
 
@@ -70,8 +73,8 @@ static void print_prompt(struct line ln, char * prompt) {
     write(STDOUT_FILENO, ln.str.s, strlen(ln.str.s));
 
     char buf[16];
-    if(line_info.posx != 0) {
-        sprintf(buf, "\r\x1b[%dC", line_info.posx + (int) strlen(prompt));
+    if(ln.posx != 0) {
+        sprintf(buf, "\r\x1b[%dC", ln.posx + (int) strlen(prompt));
         write(STDOUT_FILENO, buf, strlen(buf));
     } else {
         sprintf(buf, "\r\x1b[%dC", (int) strlen(prompt));
@@ -139,17 +142,17 @@ void insert_char_at_cursor(struct list *lst, char c)
     }
 }
 
-void move_cursor_left(struct list *lst)
+void move_cursor_left(struct line *ln)
 {
-    if(list_move_cursor_left(lst)) {
-        line_info.posx--;
+    if(ln->posx > 0) {
+        ln->posx--;
     }
 }
 
-void move_cursor_right(struct list *lst)
+void move_cursor_right(struct line *ln)
 {
-    if(list_move_cursor_right(lst)) {
-        line_info.posx++;
+    if(ln->posx < ln->str.size) {
+        ln->posx++;
     }
 }
 
@@ -171,13 +174,14 @@ void handle_char(struct line *ln, int nc)
         char c = (char) nc;
         insert_char(ln, c);
     }
-    /*
     if(nc == ARROW_LEFT) {
-        move_cursor_left(lst);
+        move_cursor_left(ln);
     }
+
     if(nc == ARROW_RIGHT) {
-        move_cursor_right(lst);
+        move_cursor_right(ln);
     }
+    /*
     if(nc == 0x7F) {
         delete_at_cursor(lst);
     }
