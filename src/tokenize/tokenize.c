@@ -1,3 +1,4 @@
+#include "util.h"
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 
 /*** TOKENIZER ***/
 
+#define STR_INIT_CAPAC 32
 static const char *DELIMS = " \t\r\n";
 static const char *OPERATORS = "|><&";
 
@@ -61,7 +63,6 @@ void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum 
     t.type = type;
     memset(buf, 0, bufsize);
     add_token(tl, t);
-
 }
 
 /*
@@ -90,84 +91,86 @@ struct token_list *tokenize(char *line) {
     long init_size = 4;
 
     struct token_list *tl = malloc(sizeof(struct token_list));
+
+    struct string token_str;
+    init_string(&token_str, STR_INIT_CAPAC);
     init_token_list(tl);
     char buf[64];
     buf[0] = '\0';
+    int token_pos = 0;
+    int line_len = strlen(line);
+
     int i = 0;
-    struct node *cursor = NULL;//line->HEAD;
 
-    if(cursor->c == '\0' && cursor->next != NULL) {
-        cursor = cursor->next;
-    }
-
-    while(cursor != NULL ) {
-        char c = cursor->c;
+    printf("%d\r\n", line_len);
+    while (i <= line_len) {
+        printf("%d\r\n", i);
+        char c = line[i];
         if (state == NORMAL) {
             if(strchr(DELIMS, c)) {
-                add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
-                i = 0;
+                printf("in delims normal\r\n");
+                add_token_from_buff(tl, token_str.s, token_str.size, TOK_WORD);
+                token_pos = 0;
+                token_str.size = 0;
 
                 // skip over rest of delims
-                while(cursor != NULL && strchr(DELIMS, c)) {
-                    cursor = cursor->next;
-                    if(cursor != NULL) {
-                        c = cursor->c;
-                    }
+                  while(i < line_len && strchr(DELIMS, c)) {
+                      i++;
+                      c = line[i];
+                  }
+            } else if (i == line_len - 1) {
+                printf("in i == line_len\r\n");
+                insert_char_to_str(&token_str, c, token_pos++);
+                add_token_from_buff(tl, token_str.s, token_str.size, TOK_WORD);
+                token_pos = 0;
+                token_str.size = 0;
+                i++;
+                break;
+            }else if (strchr(OPERATORS, c)) {
+                add_token_from_buff(tl, token_str.s, token_str.size, TOK_WORD);
+                token_pos = 0;
+                token_str.size = 0;
+                insert_char_to_str(&token_str, c, token_pos++);
+                i++;
+                if(i < line_len && line[i] == c) {
+                    insert_char_to_str(&token_str, c, token_pos++);
+                    i++;
                 }
-            } else if (strchr(OPERATORS, c)) {
-                // Consume current buffer to token list
-                // to clear buffer for token
-                add_token_from_buff(tl, buf, sizeof(buf), TOK_WORD);
-                i = 0;
-                buf[i++] = c;
 
-                // Handle operators && ||.
-                if (cursor->next != NULL && cursor->next->c == c) {
-                    buf[i++] = c; 
-                    cursor = cursor-> next;
-                }
-                if (cursor->next != NULL) {
-                    cursor = cursor-> next;
-                }
-
-                buf[i] = '\0';
-                add_token_from_buff(tl, buf, sizeof(buf), get_token_operator_type(buf));
-                i = 0;
+                add_token_from_buff(tl, token_str.s, token_str.size, get_token_operator_type(token_str.s));
             } else if (c == '"') {
                 state = IN_QUOTE;
-                cursor = cursor->next;
+                i++;
             } else {
-                buf[i++] = c;
-                buf[i] = '\0';
-                cursor = cursor->next;
+                insert_char_to_str(&token_str, c, token_pos++);
+                i++;
             }
         } else if (state == IN_QUOTE) {
+            printf("In quote %d\r\n", i);
             if (c == '"') {
-                add_token_from_buff(tl, buf, sizeof(buf), TOK_STRING);
+                printf("Leaving quote %d\r\n", i);
+                add_token_from_buff(tl, token_str.s, token_str.size, TOK_STRING);
                 state = NORMAL;
 
-                if (cursor->next != NULL) {
-                    cursor = cursor->next;
-                    c = cursor->c;
+                if (i < line_len) {
+                    i++;
+                }
+                c = line[i];
+                while(i < line_len && strchr(DELIMS, c)) {
+                    i++;
+                    c = line[i];
                 }
 
-                while(cursor != NULL && strchr(DELIMS, cursor->c)) {
-                    cursor = cursor->next;
-                }
-
-                i = 0;
             } else {
-                buf[i++] = c;
-                buf[i] = '\0';
-                cursor = cursor->next;
+                insert_char_to_str(&token_str, c, token_pos++);
+                i++;
             }
         }
     }
-
-    // Debug print
-    for (int i = 0; i < tl->size; i++) {
-        printf("Token of type %d %d: %s\r\n", tl->tokens[i].type, i, tl->tokens[i].value);
+    /*
+    for(int i = 0; i < tl->size; i++) {
+        printf("Token type %d %d: %s\r\n", i, tl->tokens[i].type, tl->tokens[i].value);
     }
-    //free_list(line);
+    */
     return tl;
 }

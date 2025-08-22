@@ -18,7 +18,6 @@ void init_string(struct string *str, int capac)
 
 bool insert_char_to_str(struct string *str, char c, int pos)
 {
-
     if (str->size >= str->capac) {
         str->capac *= 2;
         char *tmp = realloc(str->s, sizeof(char) * (str->capac + 1));

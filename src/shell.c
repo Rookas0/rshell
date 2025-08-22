@@ -21,7 +21,7 @@ void intHandler(int sig)
 {
     // On interupt( Ctrl C) reprint prompt without exiting
     write(STDOUT_FILENO, "\r\n> ", 4);
-    exit(0);
+    //exit(0);
 }
 
 void seg_handler(int sig)
@@ -51,12 +51,8 @@ int main(void)
         enable_raw_mode();
         struct line *ln = readline("> ");
         disable_raw_mode();
+        tl = tokenize(ln->str.s);
         free_line(ln);
-        continue;
-        //tl = tokenize(line);
-        if(tl->size == 0) {
-            continue;
-        }
 
         // After making tree from tokens, tokens are no longer needed
         struct ot_node *ot = parse(tl);
