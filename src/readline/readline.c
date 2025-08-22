@@ -1,30 +1,48 @@
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../list/list.h"
-#include "./readline.h"
- 
-struct line_info line_info;
 
-void print_prompt(struct list *lst, char * prompt) {
-    struct node *n = lst->HEAD;
-    if(prompt == NULL) {
+#include "../util/util.h"
+#include "./readline.h"
+
+#define LINE_INIT_CAPAC 128
+struct line line_info;
+
+
+static struct line * init_line()
+{
+    struct line *ln = malloc(sizeof(struct line));
+    ln->posx = 0;
+    init_string(&ln->str, LINE_INIT_CAPAC);
+
+    return ln;
+}
+
+void free_line(struct line *ln)
+{
+    if(ln == NULL) return;
+
+    free(ln->str.s);
+    free(ln);
+}
+
+
+
+static void print_prompt(struct line *ln, char *prompt)
+{
+    if (prompt == NULL) {
         prompt = "> ";
     }
 
     write(STDOUT_FILENO, "\r\x1b[?25l", 7);
-
     write(STDOUT_FILENO, prompt, strlen(prompt));
-
-    while(n != NULL) {
-        fflush(stdout);
-        write(STDOUT_FILENO, &n->c, 1);
-        n = n->next;
-    }
+    write(STDOUT_FILENO, ln->str.s, strlen(ln->str.s));
 
     char buf[16];
-    if(line_info.posx != 0) {
-        sprintf(buf, "\r\x1b[%dC", line_info.posx + (int) strlen(prompt));
+    if(ln->posx != 0) {
+        sprintf(buf, "\r\x1b[%dC", ln->posx + (int) strlen(prompt));
         write(STDOUT_FILENO, buf, strlen(buf));
     } else {
         sprintf(buf, "\r\x1b[%dC", (int) strlen(prompt));
@@ -34,8 +52,11 @@ void print_prompt(struct list *lst, char * prompt) {
     write(STDOUT_FILENO, "\x1b[?25h", 6);
 }
 
-int readchar(void) {
+static int readchar(void)
+{
     // referenced kilo text editor for handling escape sequence
+    // Copyright (c) 2016, Salvatore Sanfilippo <antirez at gmail dot com>
+    // BSD 2-Clause "Simplified" License
     char c;
     read(STDIN_FILENO, &c, 1);
 
@@ -78,93 +99,101 @@ int readchar(void) {
         }
         return '\x1b';
     }
+    else if(c == 0x03) {
+        //raise(SIGINT);
+        return c;
+    }
     return c;
 }
 
-void insert_char_at_cursor(struct list *lst, char c)
+
+static void insert_char(struct line *ln, char c)
 {
-    if(list_insert_after_cursor(lst, c)) {
-        line_info.posx++;
+    if(insert_char_to_str(&ln->str, c, ln->posx)) {
+        ln->posx++;
     }
 }
 
-void move_cursor_left(struct list *lst)
+static void delete_char(struct line *ln)
 {
-    if(list_move_cursor_left(lst)) {
-        line_info.posx--;
+    if(ln->posx <= 0) {
+        return;
+    }
+
+
+    // at end of line
+    if(ln->str.size == ln->posx) {
+        ln->str.s[ln->posx-1] = '\0';
+        ln->posx--;
+        ln->str.size--;
+        return;
+    }
+
+    //shift
+    for(int i = ln->posx - 1; i <= ln->str.size - 1; i++) {
+        ln->str.s[i] = ln->str.s[i+1];
+    }
+    ln->posx--;
+    ln->str.size--;
+    ln->str.s[ln->str.size] = '\0';
+}
+
+static void move_cursor_left(struct line *ln)
+{
+    if(ln->posx > 0) {
+        ln->posx--;
     }
 }
 
-void move_cursor_right(struct list *lst)
+static void move_cursor_right(struct line *ln)
 {
-    if(list_move_cursor_right(lst)) {
-        line_info.posx++;
+    if(ln->posx < ln->str.size) {
+        ln->posx++;
     }
 }
 
-void delete_at_cursor(struct list *lst) 
-{
-    if(list_delete_at_cursor(lst)) {
-        line_info.posx--;
-    }
-}
-
-void append_enter(struct list *lst) {
-    char c = '\r';
-    list_append_char(lst, c);
-}
-
-void handle_char(struct list *lst, int nc)
+static void handle_char(struct line *ln, int nc)
 {
     if(nc >= 0x20 && nc <= 0x7E) {
         char c = (char) nc;
-        insert_char_at_cursor(lst, c);
+        insert_char(ln, c);
+    } else if(nc == 0x7F) {
+        delete_char(ln);
+    } else if(nc == ARROW_LEFT) {
+        move_cursor_left(ln);
+    } else if(nc == ARROW_RIGHT) {
+        move_cursor_right(ln);
+    } else if(nc == HOME_KEY) {
+        ln->posx = 0;
+    } else if(nc == END_KEY) {
+        ln->posx = ln->str.size;
     }
-    if(nc == ARROW_LEFT) {
-        move_cursor_left(lst);
-    }
-    if(nc == ARROW_RIGHT) {
-        move_cursor_right(lst);
-    }
-    if(nc == 0x7F) {
-        delete_at_cursor(lst);
-    }
-    if(nc == 0x0A) {
-        append_enter(lst);
-    }
-
 }
 
-struct list * readline(char *prompt) {
-    char c = '\0';
-    struct list *lst = create_list();
-    line_info.posx = 0;
-    for(;;) {
-        print_prompt(lst, prompt);
-        fflush(stdout);
-        //read(STDIN_FILENO, &c, 1);
-        int nc = readchar();
-        handle_char(lst, nc);
-        // clear line and rewrite
-        write(STDOUT_FILENO, "\r\x1b[K", 4);
-        //struct list *tmp = head;
-        c = (char) nc;
 
-        if(c == '\r' || c == '\n') {
-            append_enter(lst);
-            //buf[i] = '\0';
+struct line * readline(char *prompt)
+{
+    struct line *ln = init_line();
+    for(;;) {
+        print_prompt(ln, prompt);
+        fflush(stdout);
+
+        int nc = readchar();
+
+        if(nc == '\r' || nc == '\n') {
             break;
         }
+
+        handle_char(ln, nc);
+
+        // clear line and rewrite
+        write(STDOUT_FILENO, "\r\x1b[K", 4);
+
     }
-    print_prompt(lst, prompt);
+
+    print_prompt(ln, prompt);
     write(STDOUT_FILENO, "\r\n", 2);
-    line_info.posx = 0;
-    
-    /*
-    while(cursor->next != NULL) {
-        write(STDOUT_FILENO, &cursor->c, 1);
-        cursor = cursor->next;
-    } 
-    */
-    return lst;
+    ln->posx = 0;
+
+    return ln;
 }

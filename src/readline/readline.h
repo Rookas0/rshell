@@ -1,5 +1,6 @@
 #pragma once
-#include "../list/list.h"
+
+#include "../util/util.h"
 
 enum shell_key {
     ARROW_LEFT =  1000,
@@ -13,16 +14,10 @@ enum shell_key {
     PAGE_DOWN
 };
 
-struct line_info {
+struct line {
+    struct string str;
     int posx;
 };
 
-extern struct line_info line_info;
-void print_prompt(struct list *head, char * prompt);
-int readchar(void);
-void insert_char_at_cursor(struct list *lst, char c);
-void move_cursor_left(struct list *lst);
-void move_cursor_right(struct list *lst);
-void delete_at_cursor(struct list *lst);
-void handle_char(struct list *lst, int nc);
-struct list * readline(char *prompt);
+struct line * readline(char *prompt);
+void free_line(struct line *ln);

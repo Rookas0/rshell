@@ -21,6 +21,7 @@ void intHandler(int sig)
 {
     // On interupt( Ctrl C) reprint prompt without exiting
     write(STDOUT_FILENO, "\r\n> ", 4);
+    //exit(0);
 }
 
 void seg_handler(int sig)
@@ -48,13 +49,10 @@ int main(void)
 
         // Raw mode for input, not for running commands.
         enable_raw_mode();
-        struct list *line = readline("> ");
+        struct line *ln = readline("> ");
         disable_raw_mode();
-
-        tl = tokenize(line);
-        if(tl->size == 0) {
-            continue;
-        }
+        tl = tokenize(ln->str.s);
+        free_line(ln);
 
         // After making tree from tokens, tokens are no longer needed
         struct ot_node *ot = parse(tl);
