@@ -1,5 +1,4 @@
 #pragma once
-#include "../list/list.h"
 
 enum state { NORMAL, IN_QUOTE };
 

@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "term.h"
+
 struct termios orig_termios;
 static bool in_raw_mode = false;
 

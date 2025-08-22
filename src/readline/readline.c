@@ -1,11 +1,10 @@
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "../util/util.h"
-#include "./readline.h"
+#include "util.h"
+#include "readline.h"
 
 #define LINE_INIT_CAPAC 128
 struct line line_info;

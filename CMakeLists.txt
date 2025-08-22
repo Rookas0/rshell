@@ -10,7 +10,8 @@ include_directories(
     src/readline
     src/exec
     src/exec/builtins
-    src/parser)
+    src/parser
+    src/util)
 
 set(SOURCES
     src/shell.c
@@ -20,6 +21,7 @@ set(SOURCES
     src/readline/readline.c
     src/exec/exec.c
     src/exec/builtins/builtins.c
-    src/parser/parser.c)
+    src/parser/parser.c
+    src/util/util.c)
 
 add_executable(rshell ${SOURCES})

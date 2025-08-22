@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/util.h"
+#include "util.h"
 
 enum shell_key {
     ARROW_LEFT =  1000,

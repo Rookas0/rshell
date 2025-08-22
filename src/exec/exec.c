@@ -5,9 +5,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "../term/term.h"
-#include "../parser/parser.h"
-#include "./builtins/builtins.h"
+#include "term.h"
+#include "parser.h"
+#include "builtins.h"
 #include "exec.h"
 
 

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "./util.h"
+#include "util.h"
 
 void init_string(struct string *str, int capac)
 {

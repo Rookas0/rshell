@@ -5,17 +5,14 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <errno.h>
 #include <termios.h>
 #include <stdbool.h>
 
-#include "./term/term.h"
-#include "./list/list.h"
-#include "./tokenize/tokenize.h"
-#include "./readline/readline.h"
-#include "./exec/exec.h"
-#include "./exec/builtins/builtins.h"
-#include "./parser/parser.h"
+#include "term.h"
+#include "tokenize.h"
+#include "readline.h"
+#include "exec.h"
+#include "parser.h"
 
 void intHandler(int sig)
 {

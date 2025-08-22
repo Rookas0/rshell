@@ -3,9 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "./tokenize.h"
-#include "../util/util.h"
-#include "../list/list.h"
+#include "tokenize.h"
+#include "util.h"
 
 /*** TOKENIZER ***/
 
