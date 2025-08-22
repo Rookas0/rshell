@@ -1,10 +1,10 @@
-#include "util.h"
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "./tokenize.h"
+#include "../util/util.h"
 #include "../list/list.h"
 
 /*** TOKENIZER ***/
@@ -15,8 +15,8 @@ static const char *OPERATORS = "|><&";
 
 void add_token(struct token_list *list, struct token t) {
     if(list->size >= list->capacity) {
-        printf("size: %d, capac: %d\r\n", list->size, list->capacity);
-        printf("reallocating....\r\n");
+        //printf("size: %d, capac: %d\r\n", list->size, list->capacity);
+        //printf("reallocating....\r\n");
         list->tokens = realloc(list->tokens, sizeof(struct token) * list->capacity*2);
         list->capacity *= 2;
     }
@@ -102,7 +102,7 @@ struct token_list *tokenize(char *line) {
 
     int i = 0;
 
-    printf("%d\r\n", line_len);
+    //printf("%d\r\n", line_len);
     while (i < line_len) {
         //printf("%d\r\n", i);
         char c = line[i];
@@ -167,8 +167,11 @@ struct token_list *tokenize(char *line) {
             }
         }
     }
+
+    /*
     for(int i = 0; i < tl->size; i++) {
         printf("Token type %d %d: %s\r\n", i, tl->tokens[i].type, tl->tokens[i].value);
     }
+    */
     return tl;
 }
