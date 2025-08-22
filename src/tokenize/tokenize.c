@@ -103,12 +103,12 @@ struct token_list *tokenize(char *line) {
     int i = 0;
 
     printf("%d\r\n", line_len);
-    while (i <= line_len) {
-        printf("%d\r\n", i);
+    while (i < line_len) {
+        //printf("%d\r\n", i);
         char c = line[i];
         if (state == NORMAL) {
             if(strchr(DELIMS, c)) {
-                printf("in delims normal\r\n");
+                //printf("in delims normal\r\n");
                 add_token_from_buff(tl, token_str.s, token_str.size, TOK_WORD);
                 token_pos = 0;
                 token_str.size = 0;
@@ -119,7 +119,7 @@ struct token_list *tokenize(char *line) {
                       c = line[i];
                   }
             } else if (i == line_len - 1) {
-                printf("in i == line_len\r\n");
+                //printf("in i == line_len\r\n");
                 insert_char_to_str(&token_str, c, token_pos++);
                 add_token_from_buff(tl, token_str.s, token_str.size, TOK_WORD);
                 token_pos = 0;
@@ -146,13 +146,13 @@ struct token_list *tokenize(char *line) {
                 i++;
             }
         } else if (state == IN_QUOTE) {
-            printf("In quote %d\r\n", i);
+            //printf("In quote %d\r\n", i);
             if (c == '"') {
-                printf("Leaving quote %d\r\n", i);
+                //printf("Leaving quote %d\r\n", i);
                 add_token_from_buff(tl, token_str.s, token_str.size, TOK_STRING);
                 state = NORMAL;
 
-                if (i < line_len) {
+                if (i <= line_len) {
                     i++;
                 }
                 c = line[i];
@@ -167,10 +167,8 @@ struct token_list *tokenize(char *line) {
             }
         }
     }
-    /*
     for(int i = 0; i < tl->size; i++) {
         printf("Token type %d %d: %s\r\n", i, tl->tokens[i].type, tl->tokens[i].value);
     }
-    */
     return tl;
 }
