@@ -24,7 +24,7 @@ mkdir build && cd build
 cmake ..
 ```
 3. Compile
-``bash
+```bash
 make
 ```
 4. Run rshell!
