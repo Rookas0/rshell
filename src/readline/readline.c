@@ -19,16 +19,6 @@ static struct line * init_line()
     return ln;
 }
 
-void free_line(struct line *ln)
-{
-    if(ln == NULL) return;
-
-    free(ln->str.s);
-    free(ln);
-}
-
-
-
 static void print_prompt(struct line *ln, char *prompt)
 {
     if (prompt == NULL) {
@@ -59,8 +49,8 @@ static int readchar(void)
     char c;
     read(STDIN_FILENO, &c, 1);
 
-    // if escape sequence isn't followed by anything, escape key was pressed, so return escape
-    //  otherwise, decode escape sequence into the proper key
+    // if escape sequence isn't followed by anything, escape key was pressed,
+    // so return escape. otherwise, decode escape sequence into the proper key
     if(c == '\x1b') {
         char seq[3];
         if(read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
@@ -169,7 +159,20 @@ static void handle_char(struct line *ln, int nc)
     }
 }
 
+// Must be called by caller once done with readline's struct
+void free_line(struct line *ln)
+{
+    if(ln == NULL) return;
 
+    free(ln->str.s);
+    free(ln);
+}
+
+/*
+ * At the moment, returns a line object with a C string inside of it.
+ * Might be better to return the string itself to make it usable without
+ * needing to understand the included line struct
+ */
 struct line * readline(char *prompt)
 {
     struct line *ln = init_line();

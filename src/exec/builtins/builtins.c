@@ -5,7 +5,8 @@
 
 #include "builtins.h"
 
-int cd(char * path) {
+int cd(char * path)
+{
     if(chdir(path) == -1) {
         perror("chdir");
         return 1;

@@ -17,7 +17,8 @@ static bool in_raw_mode = false;
  * This will overwrite the original with the raw mode attributes.
  */
 
-void enable_raw_mode(void) {
+void enable_raw_mode(void)
+{
     if(in_raw_mode) return;
 
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
@@ -41,11 +42,11 @@ void enable_raw_mode(void) {
 /*
  * Restores orig_termios saved in enable_raw_mode
  */
-void disable_raw_mode(void) {
+void disable_raw_mode(void)
+{
     //printf("disabling raw mode\r\n");
     if(isatty(STDIN_FILENO) && tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
         perror("tcsetattr");
     }
     in_raw_mode = false;
 }
-

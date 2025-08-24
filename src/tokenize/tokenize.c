@@ -12,7 +12,8 @@
 static const char *DELIMS = " \t\r\n";
 static const char *OPERATORS = "|><&";
 
-void add_token(struct token_list *list, struct token t) {
+void add_token(struct token_list *list, struct token t)
+{
     if(list->size >= list->capacity) {
         //printf("size: %d, capac: %d\r\n", list->size, list->capacity);
         //printf("reallocating....\r\n");
@@ -25,7 +26,8 @@ void add_token(struct token_list *list, struct token t) {
     }
 }
 
-void free_token_list(struct token_list *list) {
+void free_token_list(struct token_list *list)
+{
     for(int i = 0; i < list->size; i++ ) {
         free(list->tokens[i].value);
     }
@@ -72,7 +74,8 @@ void add_token_from_buff(struct token_list *tl, char *buf, size_t bufsize, enum 
  * TODO Would prefer this to be flattened a bit
  */
 
-int get_token_operator_type(const char* buf) {
+int get_token_operator_type(const char* buf)
+{
     if(strcmp(buf, "|") == 0) {
         return TOK_PIPE;
     }
@@ -85,7 +88,8 @@ int get_token_operator_type(const char* buf) {
     return TOK_OPERATOR;
 }
 
-struct token_list *tokenize(char *line) {
+struct token_list *tokenize(char *line)
+{
     enum state state = NORMAL;
     long init_size = 4;
 

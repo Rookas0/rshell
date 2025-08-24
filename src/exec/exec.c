@@ -77,6 +77,7 @@ void exec_pipe(struct ot_node *node)
 
 
 }
+
 void exec_tree(struct ot_node *node)
 {
     int pipefd[2];
@@ -124,5 +125,3 @@ void exec_tree(struct ot_node *node)
         waitpid(cpid, NULL, 0);
     }
 }
-
-

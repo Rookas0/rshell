@@ -2,7 +2,8 @@
 
 #include "list.h"
 
-struct list *create_list(void) {
+struct list *create_list(void)
+{
     struct list *my_list = malloc(sizeof(struct list));
     struct node *dummy = malloc(sizeof(struct node));
 
@@ -15,7 +16,8 @@ struct list *create_list(void) {
     return my_list;
 }
 
-struct node *create_node(char c) {
+struct node *create_node(char c)
+{
     struct node *n = malloc(sizeof(struct node));
     n->next = NULL;
     n->prev = NULL;
@@ -93,7 +95,9 @@ bool list_delete_at_cursor(struct list *lst)
 
     return false;
 }
-void free_list(struct list* l) {
+
+void free_list(struct list* l)
+{
     struct node *cursor = l->HEAD;
 
     while(cursor->prev != NULL) {
